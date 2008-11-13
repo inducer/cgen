@@ -403,6 +403,17 @@ class Define(Generable):
     def generate(self):
         yield "#define %s %s" % (self.symbol, self.value)
 
+class Include(Generable):
+    def __init__(self, filename, system=True):
+        self.filename = filename
+        self.system = system
+
+    def generate(self):
+        if self.system:
+            yield "#include <%s>" % self.filename
+        else:
+            yield "#include \"%s\"" % self.filename
+
 class Pragma(Generable):
     def __init__(self, value):
         self.value = value

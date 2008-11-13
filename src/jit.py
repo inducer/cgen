@@ -87,13 +87,28 @@ def parse_python_makefile():
     
 from pytools import Record
 class Platform(Record):
+    def __init__(self, *args, **kwargs):
+        Record.__init__(self, *args, **kwargs)
+        self.features = set()
+
     def abi_id(self):
         import sys
         return [self.get_version(), sys.version]
 
-    def add_package(self, include_dirs, library_dirs, libraries):
-        self.include_dirs.extend(include_dirs)
-        self.library_dirs.extend(library_dirs)
+    def add_library(self, feature, include_dirs, library_dirs, libraries):
+        if feature in self.features:
+            return
+
+        self.features.add(feature)
+
+        for idir in include_dirs:
+            if not idir in self.include_dirs:
+                self.include_dirs.append(idir)
+
+        for ldir in library_dirs:
+            if not ldir in self.library_dirs:
+                self.library_dirs.append(ldir)
+
         self.libraries = libraries + self.libraries
 
         
@@ -118,13 +133,16 @@ class GCCPlatform(Platform):
     def abi_id(self):
         return Platform.abi_id(self) + [self._cmdline()]
 
-    def build_extension(self, ext_file, source_files):
+    def build_extension(self, ext_file, source_files, debug=False):
         cc_cmdline = (
                 self._cmdline()
                 + ["-o%s" % ext_file]
                 + source_files
                 )
         from subprocess import call
+        if debug:
+            print " ".join(cc_cmdline)
+
         result = call(cc_cmdline)
 
         if result != 0:
@@ -144,7 +162,8 @@ def _erase_dir(dir):
 
 
 
-def extension_file_from_string(platform, ext_file, source_string, source_name="module.cpp"):
+def extension_file_from_string(platform, ext_file, source_string, 
+        source_name="module.cpp", debug=False):
     from tempfile import mkdtemp
     src_dir = mkdtemp()
 
@@ -155,7 +174,7 @@ def extension_file_from_string(platform, ext_file, source_string, source_name="m
     outf.close()
 
     try:
-        platform.build_extension(ext_file, [source_file])
+        platform.build_extension(ext_file, [source_file], debug=debug)
     finally:
         _erase_dir(src_dir)
 
@@ -163,7 +182,10 @@ def extension_file_from_string(platform, ext_file, source_string, source_name="m
 
 
 def extension_from_string(platform, name, source_string, source_name="module.cpp", 
-        cache_dir=None):
+        cache_dir=None, debug=False, wait_on_error=None):
+    if wait_on_error is None:
+        wait_on_error = debug
+
     from os import mkdir
     from os.path import join
     from imp import load_dynamic
@@ -208,8 +230,12 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
     outf.close()
 
     try:
-        platform.build_extension(ext_file, [source_file])
+        platform.build_extension(ext_file, [source_file], debug=debug)
         return load_dynamic(mod_name, ext_file)
+    except CompileError:
+        if wait_on_error:
+            raw_input("Examine %s, then press [Enter]:" % source_file)
+        raise
     finally:
         _erase_dir(temp_dir)
 
@@ -217,28 +243,7 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
 
 
 # configuration ---------------------------------------------------------------
-def get_aksetup_config():
-    def update_config(fname):
-        import os
-        if os.access(fname, os.R_OK):
-            filevars = {}
-            execfile(fname, filevars)
-
-            for key, value in filevars.iteritems():
-                if key != "__builtins__":
-                    config[key] = value
-
-    config = {}
-    from os.path import expanduser
-    update_config(expanduser("~/.aksetup-defaults.py"))
-
-    import sys
-    if not sys.platform.lower().startswith("win"):
-        update_config(expanduser("/etc/aksetup-defaults.py"))
-
-    return config
-
-def platform_from_makefile():
+def guess_platform():
     def strip_prefix(pfx, value):
         if value.startswith(pfx):
             return value[len(pfx):]
@@ -269,34 +274,9 @@ def platform_from_makefile():
             )
 
     if kwargs["cc"] in ["gcc", "cc"]:
+        if "-Wstrict-prototypes" in kwargs["cflags"]:
+            kwargs["cflags"].remove("-Wstrict-prototypes")
+
         return GCCPlatform(**kwargs)
     else:
         raise RuntimeError("unknown compiler")
-
-
-
-if __name__ == "__main__":
-    ext = """
-    #include <boost/python.hpp>
-
-    char const* greet()
-    {
-      return "hello, world";
-    }
-
-    BOOST_PYTHON_MODULE(hello)
-    {
-      using namespace boost::python;
-      def("greet", greet);
-    }
-    \n"""
-
-    plat = platform_from_makefile()
-    aksetup = get_aksetup_config()
-    plat.add_package(
-            aksetup["BOOST_INC_DIR"],
-            aksetup["BOOST_LIB_DIR"],
-            aksetup["BOOST_PYTHON_LIBNAME"],
-            )
-    mod = extension_from_string(plat, "hello", ext)
-    print mod.greet()
