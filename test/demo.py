@@ -1,7 +1,7 @@
 from codepy.cgen import *
 from codepy.bpl import BoostPythonModule
 mod = BoostPythonModule()
-Pointer(Value("char", "greet"))
+
 mod.add_function(
         FunctionBody(
             FunctionDeclaration(Const(Pointer(Value("char", "greet"))), []),

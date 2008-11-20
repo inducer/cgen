@@ -114,11 +114,15 @@ class Platform(Record):
         
 
 
+def get_output(cmdline):
+    from subprocess import Popen, PIPE
+    return Popen(cmdline, stdout=PIPE).communicate()[0]
+
+
+
 class GCCPlatform(Platform):
     def get_version(self):
-        from subprocess import Popen, PIPE
-        return Popen([self.cc, "--version"], 
-                stdout=PIPE).communicate()[0]
+        return get_output([self.cc, "--version"])
 
     def _cmdline(self):
         return (
@@ -243,6 +247,12 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
 
 
 # configuration ---------------------------------------------------------------
+class PlatformGuessError(Exception):
+    pass
+
+
+
+
 def guess_platform():
     def strip_prefix(pfx, value):
         if value.startswith(pfx):
@@ -274,9 +284,13 @@ def guess_platform():
             )
 
     if kwargs["cc"] in ["gcc", "cc"]:
-        if "-Wstrict-prototypes" in kwargs["cflags"]:
-            kwargs["cflags"].remove("-Wstrict-prototypes")
+        version = get_output([kwargs["cc"], "--version"])
+        if version.startswith("gcc"):
+            if "-Wstrict-prototypes" in kwargs["cflags"]:
+                kwargs["cflags"].remove("-Wstrict-prototypes")
 
-        return GCCPlatform(**kwargs)
+            return GCCPlatform(**kwargs)
+        else:
+            raise PlatformGuessError("unknown compiler")
     else:
-        raise RuntimeError("unknown compiler")
+        raise PlatformGuessError("unknown compiler")

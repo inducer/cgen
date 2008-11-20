@@ -157,9 +157,8 @@ class MaybeUnused(NestedDeclarator):
         return sub_tp, ("%s __attribute__ ((unused))" % sub_decl)
 
 class Pointer(NestedDeclarator):
-    def __init__(self, subdecl, count=None):
+    def __init__(self, subdecl):
         NestedDeclarator.__init__(self, subdecl)
-        self.count = count
 
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
@@ -170,6 +169,11 @@ class Pointer(NestedDeclarator):
 
     def struct_format(self):
         return "P"
+
+class Reference(Pointer):
+    def get_decl_pair(self):
+        sub_tp, sub_decl = self.subdecl.get_decl_pair()
+        return sub_tp, ("&%s" % sub_decl)
 
 class ArrayOf(NestedDeclarator):
     def __init__(self, subdecl, count=None):
@@ -339,13 +343,13 @@ class If(Generable):
                 for line in self.else_.generate():
                     yield "  "+line
 
-class While(Generable):
-    def __init__(self, condition, body):
-        self.condition = condition
+class Loop(Generable):
+    def __init__(self, body):
         self.body = body
 
     def generate(self):
-        yield "while (%s)" % self.condition
+        if self.intro_line() is not None:
+            yield self.intro_line()
 
         if isinstance(self.body, Block):
             for line in self.body.generate():
@@ -353,6 +357,31 @@ class While(Generable):
         else:
             for line in self.body.generate():
                 yield "  "+line
+
+        if self.outro_line() is not None:
+            yield self.outro_line()
+
+    def outro_line(self):
+        return None
+
+class CustomLoop(Generable):
+    def __init__(self, intro_line, body, outro_line=None):
+        self.intro_line = intro_line
+        self.body = body
+        self.outro_line = outro_line
+
+    def intro_line(self):
+        return self.intro_line
+    def outro_line(self):
+        return self.outro_line
+
+class While(Loop):
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+    def intro_line(self):
+        return "while (%s)" % self.condition
 
 class For(Generable):
     def __init__(self, start, condition, end, body):
@@ -361,29 +390,17 @@ class For(Generable):
         self.end = end
         self.body = body
 
-    def generate(self):
-        yield "for (%s; %s; %s)" % (self.start, self.condition, self.end)
+    def intro_line(self):
+        return "for (%s; %s; %s)" % (self.start, self.condition, self.end)
 
-        if isinstance(self.body, Block):
-            for line in self.body.generate():
-                yield line
-        else:
-            for line in self.body.generate():
-                yield "  "+line
-
-class DoWhile(Generable):
+class DoWhile(Loop):
     def __init__(self, condition, body):
         self.condition = condition
         self.body = body
 
-    def generate(self):
-        yield "do"
-        if isinstance(self.body, Block):
-            for line in self.body.generate():
-                yield line
-        else:
-            for line in self.body.generate():
-                yield "  "+line
+    def intro_line(self):
+        return "do"
+    def outro_line(self):
         yield "while (%s)" % self.condition
 
 def make_multiple_ifs(conditions_and_blocks, base=None):

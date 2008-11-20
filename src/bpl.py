@@ -8,6 +8,12 @@ class BoostPythonModule(object):
         self.mod_body = []
         self.init_body = []
 
+    def add_to_init(self, body):
+        self.init_body.extend(body)
+
+    def add_to_module(self, body):
+        self.mod_body.extend(body)
+
     def add_function(self, func):
         self.mod_body.append(func)
         from codepy.cgen import Statement

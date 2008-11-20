@@ -49,6 +49,15 @@ def add_boost_python(platform):
 
 
 
+def add_boost_numeric_bindings(platform):
+    aksetup = get_aksetup_config()
+    platform.add_library(
+            "boost-numeric-bindings",
+            aksetup["BOOST_BINDINGS_INC_DIR"], [], [])
+
+
+
+
 def add_numpy(platform):
     def get_numpy_incpath():
         from imp import find_module
@@ -76,3 +85,11 @@ def add_pyublas(platform):
     add_boost_python(platform)
     add_numpy(platform)
     add_py_module(platform, "pyublas")
+
+
+
+
+def add_hedge(platform):
+    add_pyublas(platform)
+    add_boost_numeric_bindings(platform)
+    add_py_module(platform, "hedge")
