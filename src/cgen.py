@@ -364,16 +364,16 @@ class Loop(Generable):
     def outro_line(self):
         return None
 
-class CustomLoop(Generable):
+class CustomLoop(Loop):
     def __init__(self, intro_line, body, outro_line=None):
-        self.intro_line = intro_line
+        self.intro_line_ = intro_line
         self.body = body
-        self.outro_line = outro_line
+        self.outro_line_ = outro_line
 
     def intro_line(self):
-        return self.intro_line
+        return self.intro_line_
     def outro_line(self):
-        return self.outro_line
+        return self.outro_line_
 
 class While(Loop):
     def __init__(self, condition, body):
@@ -383,7 +383,7 @@ class While(Loop):
     def intro_line(self):
         return "while (%s)" % self.condition
 
-class For(Generable):
+class For(Loop):
     def __init__(self, start, condition, end, body):
         self.start = start
         self.condition = condition
