@@ -317,6 +317,20 @@ class GenerableStruct(Struct):
 
 
 
+# template --------------------------------------------------------------------
+class Template(NestedDeclarator):
+    def __init__(self, template_spec, subdecl):
+        self.template_spec = template_spec
+        self.subdecl = subdecl
+
+    def generate(self, with_semicolon=False):
+        yield "template <%s>" % self.template_spec
+        for i in self.subdecl.generate(with_semicolon):
+            yield i
+
+
+
+
 # control flow/statement stuff ------------------------------------------------
 class If(Generable):
     def __init__(self, condition, then_, else_=None):
