@@ -190,14 +190,14 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
     if wait_on_error is None:
         wait_on_error = debug
 
-    from os import mkdir
+    from os import mkdir, access, F_OK
     from os.path import join
     from imp import load_dynamic
 
     if cache_dir is None:
         from os.path import expanduser, exists
         cache_dir = join(expanduser("~"), 
-                ".codepy-compiler-cache")
+                ".codepy-compiler-cache-v2")
 
         if not exists(cache_dir):
             mkdir(cache_dir)
@@ -215,17 +215,42 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
 
     if cache_dir:
         cache_path = join(cache_dir, hex_checksum)
-        if not exists(cache_path):
-            mkdir(cache_path)
-
+        source_path = join(cache_path, "source")
+        done_path = join(cache_path, "done")
         ext_file = join(cache_path, name+platform.so_ext)
 
         try:
-            return load_dynamic(mod_name, ext_file)
-        except ImportError:
-            pass
+            mkdir(cache_path)
+        except OSError:
+            # already exists
+            from warnings import warn
+
+            load_attempts = 3
+            while load_attempts:
+                if exists(done_path):
+                    try:
+                        src_f = open(source_path, "r")
+                        assert src_f.read() == source_string
+                        src_f.close()
+
+                        return load_dynamic(mod_name, ext_file)
+                    except Exception, e:
+                        warn("dynamic loading of compiled module failed: %s" % e)
+                else:
+                    warn("detected compiler race--waiting")
+
+                from time import sleep
+                sleep(10)
+
+                load_attempts -= 1
+
+            warn("failed to load existing module from cache--deleting")
+            _erase_dir(cache_path)
+            mkdir(cache_path)
     else:
         ext_file = join(temp_dir, source_name+platform.so_ext)
+        done_path = None
+        source_path = None
 
     from os.path import join
     source_file = join(temp_dir, source_name)
@@ -235,6 +260,14 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
 
     try:
         platform.build_extension(ext_file, [source_file], debug=debug)
+        if source_path is not None:
+            src_f = open(source_path, "w")
+            src_f.write(source_string)
+            src_f.close()
+
+        if done_path is not None:
+            open(done_path, "w").close()
+
         return load_dynamic(mod_name, ext_file)
     except CompileError:
         if wait_on_error:
