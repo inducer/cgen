@@ -152,6 +152,12 @@ class GCCPlatform(Platform):
         if result != 0:
             raise CompileError, "module compilation failed"
 
+    def with_max_optimization(self):
+        return self.copy(
+                cflags=["-O3"] + [f for f in self.cflags[:] 
+                    if not f.startswith("-O") and not f.startswith("-g")])
+
+
 
 
 
