@@ -341,7 +341,11 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
     def check_deps(dep_path):
         from cPickle import load
 
-        dep_file = open(dep_path)
+        try:
+            dep_file = open(dep_path)
+        except IOError:
+            return False
+
         dep_struc = load(dep_file)
         dep_file.close()
 
