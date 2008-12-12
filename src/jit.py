@@ -137,6 +137,18 @@ class GCCPlatform(Platform):
     def abi_id(self):
         return Platform.abi_id(self) + [self._cmdline()]
 
+    def get_dependencies(self, source_files):
+        lines = join_continued_lines(get_output(
+                [self.cc] 
+                + ["-M"]
+                + ["-I%s" % idir for idir in self.include_dirs]
+                + source_files
+                ).split("\n"))
+
+        from pytools import flatten
+        return set(flatten(
+            line.split()[1:] for line in lines))
+
     def build_extension(self, ext_file, source_files, debug=False):
         cc_cmdline = (
                 self._cmdline()
@@ -153,9 +165,18 @@ class GCCPlatform(Platform):
             raise CompileError, "module compilation failed"
 
     def with_max_optimization(self):
-        return self.copy(
-                cflags=["-O3"] + [f for f in self.cflags[:] 
-                    if not f.startswith("-O") and not f.startswith("-g")])
+        def remove_prefix(l, prefix):
+            return [f for f in l
+                    if not f.startswith(prefix) and not f.startswith("-g")]
+
+        cflags = self.cflags
+        for pfx in ["-O", "-g", "-march", "-mtune"]:
+            cflags = remove_prefix(self.cflags, pfx)
+
+        return self.copy(cflags=cflags + [
+                "-O3", 
+                "-march=native", "-mtune=native", 
+                "-ftree-vectorize"])
 
 
 
@@ -191,96 +212,218 @@ def extension_file_from_string(platform, ext_file, source_string,
 
 
 
+class CleanupBase(object):
+    pass
+
+class CleanupManager(CleanupBase):
+    def __init__(self):
+        self.cleanups = []
+
+    def register(self, c):
+        self.cleanups.insert(0, c)
+
+    def clean_up(self):
+        for c in self.cleanups:
+            c.clean_up()
+
+    def error_clean_up(self):
+        for c in self.cleanups:
+            c.error_clean_up()
+
+class TempDirManager(CleanupBase):
+    def __init__(self, cleanup_m):
+        from tempfile import mkdtemp
+        self.path = mkdtemp()
+        cleanup_m.register(self)
+
+    def sub(self, n):
+        from os.path import join
+        return join(self.path, n)
+
+    def clean_up(self):
+        _erase_dir(self.path)
+
+    def error_clean_up(self):
+        pass
+
+class CacheLockManager(CleanupBase):
+    def __init__(self, cleanup_m, cache_dir):
+        import os
+
+        if cache_dir is not None:
+            self.lock_file = os.path.join(cache_dir, "lock")
+            while True:
+                try:
+                    self.fd = os.open(self.lock_file, 
+                            os.O_CREAT | os.O_WRONLY | os.O_EXCL)
+                    break
+                except OSError:
+                    pass
+
+                from time import sleep
+                sleep(1)
+
+            cleanup_m.register(self)
+
+    def clean_up(self):
+        import os
+        os.close(self.fd)
+        os.unlink(self.lock_file)
+
+    def error_clean_up(self):
+        pass
+
+class ModuleCacheDirManager(CleanupBase):
+    def __init__(self, cleanup_m, path):
+        from os import mkdir
+
+        self.path = path
+        try:
+            mkdir(self.path)
+            cleanup_m.register(self)
+            self.existed = False
+        except OSError:
+            self.existed = True
+
+    def sub(self, n):
+        from os.path import join
+        return join(self.path, n)
+
+    def reset(self):
+        import os
+        _erase_dir(self.path)
+        os.mkdir(self.path)
+
+    def clean_up(self):
+        pass
+
+    def error_clean_up(self):
+        _erase_dir(self.path)
+
+
 def extension_from_string(platform, name, source_string, source_name="module.cpp", 
         cache_dir=None, debug=False, wait_on_error=None):
     if wait_on_error is None:
         wait_on_error = debug
 
-    from os import mkdir, access, F_OK
+    import os
     from os.path import join
-    from imp import load_dynamic
 
     if cache_dir is None:
-        from os.path import expanduser, exists
-        cache_dir = join(expanduser("~"), 
-                ".codepy-compiler-cache-v2")
+        from os.path import exists
+        from tempfile import gettempdir
+        cache_dir = join(gettempdir(), 
+                "codepy-compiler-cache-v3-uid%s" % os.getuid())
 
         if not exists(cache_dir):
-            mkdir(cache_dir)
+            os.mkdir(cache_dir)
 
-    from tempfile import mkdtemp
-    temp_dir = mkdtemp()
+    def get_dep_structure():
+        deps = list(platform.get_dependencies([source_file]))
+        deps.sort()
+        return [(dep, os.stat(dep).st_mtime) for dep in deps
+                if not dep == source_file]
 
-    import md5
-    checksum = md5.new()
+    def write_source(name):
+        from os.path import join
+        outf = open(name, "w")
+        outf.write(str(source_string))
+        outf.close()
 
-    checksum.update(source_string)
-    checksum.update(str(platform.abi_id()))
-    hex_checksum = checksum.hexdigest()
-    mod_name = "codepy.temp.%s.%s" % (hex_checksum, name)
+    def calculate_hex_checksum():
+        import md5
+        checksum = md5.new()
 
-    if cache_dir:
-        cache_path = join(cache_dir, hex_checksum)
-        source_path = join(cache_path, "source")
-        done_path = join(cache_path, "done")
-        ext_file = join(cache_path, name+platform.so_ext)
+        checksum.update(source_string)
+        checksum.update(str(platform.abi_id()))
+        return checksum.hexdigest()
 
-        try:
-            mkdir(cache_path)
-        except OSError:
-            # already exists
+    def check_deps(dep_path):
+        from cPickle import load
+
+        dep_file = open(dep_path)
+        dep_struc = load(dep_file)
+        dep_file.close()
+
+        for name, date in dep_struc:
+            try:
+                if os.stat(name).st_mtime != date:
+                    return False
+            except OSError:
+                return False
+        return True
+
+    def check_source(source_path):
+        src_f = open(source_path, "r")
+        valid = src_f.read() == source_string
+        src_f.close()
+        
+        if not valid:
             from warnings import warn
+            warn("hash collision in compiler cache")
+        return valid
 
-            load_attempts = 3
-            while load_attempts:
-                if exists(done_path):
+    cleanup_m = CleanupManager()
+
+    try:
+        lock_m = CacheLockManager(cleanup_m, cache_dir)
+
+        hex_checksum = calculate_hex_checksum()
+        mod_name = "codepy.temp.%s.%s" % (hex_checksum, name)
+
+        if cache_dir:
+            mod_cache_dir_m = ModuleCacheDirManager(cleanup_m,
+                    join(cache_dir, hex_checksum))
+            source_path = mod_cache_dir_m.sub("source")
+            deps_path = mod_cache_dir_m.sub("deps")
+            ext_file = mod_cache_dir_m.sub(name+platform.so_ext)
+
+            if mod_cache_dir_m.existed:
+                if check_deps(deps_path) and check_source(source_path):
+                    # try loading it
                     try:
-                        src_f = open(source_path, "r")
-                        assert src_f.read() == source_string
-                        src_f.close()
-
+                        from imp import load_dynamic
                         return load_dynamic(mod_name, ext_file)
                     except Exception, e:
                         warn("dynamic loading of compiled module failed: %s" % e)
-                else:
-                    warn("detected compiler race--waiting")
 
-                from time import sleep
-                sleep(10)
+                # the cache directory existed, but was invalid
+                mod_cache_dir_m.reset()
+        else:
+            ext_file = join(temp_dir, source_name+platform.so_ext)
+            done_path = None
+            deps_path = None
+            source_path = None
 
-                load_attempts -= 1
+        temp_dir_m = TempDirManager(cleanup_m)
+        source_file = temp_dir_m.sub(source_name)
+        write_source(source_file)
 
-            warn("failed to load existing module from cache--deleting")
-            _erase_dir(cache_path)
-            mkdir(cache_path)
-    else:
-        ext_file = join(temp_dir, source_name+platform.so_ext)
-        done_path = None
-        source_path = None
+        try:
+            platform.build_extension(ext_file, [source_file], debug=debug)
+        except CompileError:
+            if wait_on_error:
+                raw_input("Examine %s, then press [Enter]:" % source_file)
+            raise
 
-    from os.path import join
-    source_file = join(temp_dir, source_name)
-    outf = open(source_file, "w")
-    outf.write(str(source_string))
-    outf.close()
-
-    try:
-        platform.build_extension(ext_file, [source_file], debug=debug)
         if source_path is not None:
             src_f = open(source_path, "w")
             src_f.write(source_string)
             src_f.close()
 
-        if done_path is not None:
-            open(done_path, "w").close()
+        if deps_path is not None:
+            from cPickle import dump
+            deps_file = open(deps_path, "w")
+            dump(get_dep_structure(), deps_file)
+            deps_file.close()
 
+        from imp import load_dynamic
         return load_dynamic(mod_name, ext_file)
-    except CompileError:
-        if wait_on_error:
-            raw_input("Examine %s, then press [Enter]:" % source_file)
+    except:
+        cleanup_m.error_clean_up()
         raise
     finally:
-        _erase_dir(temp_dir)
+        cleanup_m.clean_up()
 
 
 
