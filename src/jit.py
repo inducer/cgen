@@ -129,6 +129,7 @@ class GCCPlatform(Platform):
                 [self.cc] 
                 + self.cflags 
                 + self.ldflags 
+                + ["-D%s" % define for define in self.defines]
                 + ["-I%s" % idir for idir in self.include_dirs]
                 + ["-L%s" % ldir for ldir in self.library_dirs]
                 + ["-l%s" % lib for lib in self.libraries]
@@ -141,6 +142,7 @@ class GCCPlatform(Platform):
         lines = join_continued_lines(get_output(
                 [self.cc] 
                 + ["-M"]
+                + ["-D%s" % define for define in self.defines]
                 + ["-I%s" % idir for idir in self.include_dirs]
                 + source_files
                 ).split("\n"))
@@ -475,15 +477,16 @@ def guess_platform():
             return value
 
     make_vars = parse_python_makefile()
+
+    cc_cmdline = (make_vars["CC"].split()
+            + make_vars["CFLAGS"].split()
+            + make_vars["CFLAGSFORSHARED"].split())
+
     from os.path import join
     kwargs = dict(
-            cc=make_vars["CC"].split()[0],
+            cc=cc_cmdline[0],
             ld=make_vars["LDSHARED"].split()[0],
-            cflags=(
-                make_vars["CC"].split()[1:]
-                + make_vars["CFLAGS"].split()
-                + make_vars["CFLAGSFORSHARED"].split()
-                ),
+            cflags=cc_cmdline[1:],
             ldflags=(
                 make_vars["LDSHARED"].split()[1:]
                 + make_vars["LINKFORSHARED"].split()
@@ -494,7 +497,8 @@ def guess_platform():
                 make_vars["INCLUDEPY"]
                 ],
             library_dirs=[make_vars["LIBDIR"]],
-            so_ext=make_vars["SO"]
+            so_ext=make_vars["SO"],
+            defines=[],
             )
 
     if kwargs["cc"] in ["gcc", "cc"]:
