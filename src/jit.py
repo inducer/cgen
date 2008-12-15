@@ -302,7 +302,7 @@ class ModuleCacheDirManager(CleanupBase):
 
 
 def extension_from_string(platform, name, source_string, source_name="module.cpp", 
-        cache_dir=None, debug=False, wait_on_error=None):
+        cache_dir=None, debug=False, wait_on_error=None, debug_recompile=False):
     if wait_on_error is None:
         wait_on_error = debug
 
@@ -313,15 +313,24 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
         from os.path import exists
         from tempfile import gettempdir
         cache_dir = join(gettempdir(), 
-                "codepy-compiler-cache-v3-uid%s" % os.getuid())
+                "codepy-compiler-cache-v4-uid%s" % os.getuid())
 
         if not exists(cache_dir):
             os.mkdir(cache_dir)
 
+    def get_file_md5sum(fname):
+        import md5
+        checksum = md5.new()
+
+        inf = open(fname)
+        checksum.update(inf.read())
+        inf.close()
+        return checksum.hexdigest()
+
     def get_dep_structure():
         deps = list(platform.get_dependencies([source_file]))
         deps.sort()
-        return [(dep, os.stat(dep).st_mtime) for dep in deps
+        return [(dep, os.stat(dep).st_mtime, get_file_md5sum(dep)) for dep in deps
                 if not dep == source_file]
 
     def write_source(name):
@@ -349,16 +358,31 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
         dep_struc = load(dep_file)
         dep_file.close()
 
-        for name, date in dep_struc:
+        for name, date, md5sum in dep_struc:
             try:
-                if os.stat(name).st_mtime != date:
-                    return False
-            except OSError:
+                possibly_updated = os.stat(name).st_mtime != date
+            except OSError, e:
+                if debug_recompile:
+                    print "recompiling because dependency %s is inacessible (%s)." % (
+                            name, e)
                 return False
+            else:
+                if possibly_updated and md5sum != get_file_md5sum(name):
+                    if debug_recompile:
+                        print "recompiling because dependency %s was updated." % name
+                    return False
+
         return True
 
     def check_source(source_path):
-        src_f = open(source_path, "r")
+        try:
+            src_f = open(source_path, "r")
+        except IOError:
+            if debug_recompile:
+                print ("recompiling because cache directory does "
+                        "not contain 'source' entry.")
+            return False
+
         valid = src_f.read() == source_string
         src_f.close()
         
@@ -393,6 +417,10 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
 
                 # the cache directory existed, but was invalid
                 mod_cache_dir_m.reset()
+            else:
+                if debug_recompile:
+                    print "recompiling for non-existent cache dir (%s)." % (
+                            mod_cache_dir_m.path)
         else:
             ext_file = join(temp_dir, source_name+platform.so_ext)
             done_path = None
