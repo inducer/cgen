@@ -254,6 +254,8 @@ class CacheLockManager(CleanupBase):
 
         if cache_dir is not None:
             self.lock_file = os.path.join(cache_dir, "lock")
+
+            attempts = 0
             while True:
                 try:
                     self.fd = os.open(self.lock_file, 
@@ -264,6 +266,13 @@ class CacheLockManager(CleanupBase):
 
                 from time import sleep
                 sleep(1)
+
+                attempts += 1
+
+                if attempts > 10:
+                    from warnings import warn
+                    warn("could not obtain lock--delete '%s' if necessary" 
+                            % self.lock_file)
 
             cleanup_m.register(self)
 
