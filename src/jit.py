@@ -366,7 +366,12 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
         except IOError:
             return False
 
-        dep_struc = load(dep_file)
+        try:
+            dep_struc = load(dep_file)
+        except EOFError:
+            # invalid file
+            return False
+
         dep_file.close()
 
         for name, date, md5sum in dep_struc:
