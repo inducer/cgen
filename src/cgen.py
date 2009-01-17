@@ -241,7 +241,7 @@ class Struct(Declarator):
                 for f_line in f.generate():
                     yield "  " + f_line
             if self.pad_bytes:
-                yield "  unsigned char pad[%d];" % self.pad_bytes
+                yield "  unsigned char _codepy_pad[%d];" % self.pad_bytes
             yield "}"
         return get_tp(), self.declname
 
@@ -285,6 +285,8 @@ class GenerableStruct(Struct):
         else:
             self.format = format
             self.bytes = bytes
+
+        assert calcsize(self.format) == self.bytes
 
     def make(self, **kwargs):
         from struct import pack
