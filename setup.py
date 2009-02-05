@@ -41,7 +41,7 @@ setup(name="codepy",
       url="http://mathema.tician.de/software/codepy",
       author_email="inform@tiker.net",
       license = "MIT",
-      packages=["codepy"],
+      packages=["codepy", "codepy.cgen"],
       package_dir={"codepy": "src"},
       zip_safe=False,
      )
