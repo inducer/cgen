@@ -1,0 +1,7 @@
+include test/*.py
+include doc/source/*.rst
+include doc/Makefile
+include doc/source/conf.py
+
+include ez_setup.py
+include Makefile.in
