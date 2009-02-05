@@ -11,18 +11,18 @@ setup(name="codepy",
       version="0.90",
       description="Generate and execute native code at run time.",
       long_description="""
-      Pytools is a big bag of things that are "missing" from the Python standard
-      library. This is mainly a dependency of my other software packages, and is
-      probably of little interest to you unless you use those. If you're curious
-      nonetheless, here's what's on offer:
+      CodePy is a C metaprogramming toolkit for Python. It handles two aspects of
+      metaprogramming:
 
-      * A ton of small tool functions such as `len_iterable`, `argmin`, 
-        tuple generation, permutation generation, ASCII table pretty printing,
-        GvR's mokeypatch_xxx() hack, the elusive `flatten`, and much more.
-      * Michele Simionato's decorator module
-      * A time-series logging module, `pytools.log`.
-      * Batch job submission, `pytools.batchjob`.
-      * A lexer, `pytools.lex`.
+      * Generating C source code.
+      * Compiling this source code and dynamically loading it into the
+        Python interpreter.
+
+      Both capabilities are meant to be used together, but also work
+      on their own. In particular, the code generation facilities work
+      well in conjunction with `PyCuda <http://mathema.tician.de/software/pycuda>`_.
+      Dynamic compilation and linking are so far only supported in Linux
+      with the GNU toolchain.
       """,
       classifiers=[
         'Development Status :: 4 - Beta',

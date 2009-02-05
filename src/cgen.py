@@ -41,7 +41,14 @@ def dtype_to_ctype(dtype):
 
 class Generable(object):
     def __str__(self):
+        """Return a single string (possibly containing newlines) representing this
+        code construct."""
         return "\n".join(self.generate())
+
+    def generate(self, with_semicolon=True):
+        """Generate (i.e. yield) the lines making up this code construct."""
+
+        raise NotImplementedError
 
 class Declarator(Generable):
     def generate(self, with_semicolon=True):
@@ -57,7 +64,17 @@ class Declarator(Generable):
         else:
             yield "%s %s%s" % (tp_lines[-1], tp_decl, sc)
 
+    def get_decl_pair(self):
+        """Return a tuple ``(typename, rhs)``.
+
+        *typename* is a list of lines (most often just a single one)
+        describing the type of this declarator. *rhs* is the right-
+        hand side that actually contains the function/array/constness 
+        notation making up the bulk of the declarator syntax.
+        """
+
     def inline(self, with_semicolon=True):
+        """Return the declarator as a single line."""
         tp_lines, tp_decl = self.get_decl_pair()
         tp_lines = " ".join(tp_lines)
         if tp_decl is None:
