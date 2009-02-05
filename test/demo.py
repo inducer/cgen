@@ -8,8 +8,8 @@ mod.add_function(
             Block([Statement('return "hello world"')])
             ))
 
-from codepy.jit import guess_platform
-cmod = mod.compile(guess_platform(), wait_on_error=True)
+from codepy.jit import guess_toolchain
+cmod = mod.compile(guess_toolchain(), wait_on_error=True)
 
 print cmod.greet()
 

@@ -83,6 +83,10 @@ class Declarator(Generable):
             return "%s %s" % (tp_lines, tp_decl)
 
 class POD(Declarator):
+    """A simple declarator: The type is given as a :class:`numpy.dtype` 
+    and the *name* is given as a string.
+    """
+
     def __init__(self, dtype, name):
         self.dtype = numpy.dtype(dtype)
         self.name = name
@@ -100,6 +104,8 @@ class POD(Declarator):
         return 0
 
 class Value(Declarator):
+    """A simple declarator: *typename* and *name* are given as strings."""
+    
     def __init__(self, typename, name):
         self.typename = typename
         self.name = name
@@ -241,7 +247,15 @@ class FunctionDeclaration(NestedDeclarator):
 
 
 class Struct(Declarator):
+    """A structure declarator."""
+
     def __init__(self, tpname, fields, declname=None, pad_bytes=0):
+        """Initialize the structure declarator.
+        *tpname* is the name of the structure, while *declname* is the
+        name used for the declarator. *pad_bytes* is the number of
+        padding bytes added at the end of the structure.
+        *fields* is a list of :class:`Declarator` instances.
+        """
         self.tpname = tpname
         self.fields = fields
         self.declname = declname
@@ -269,12 +283,17 @@ class GenerableStruct(Struct):
     def __init__(self, tpname, fields, declname=None,
             align_bytes=1, aligned_prime_to=[]):
         """Initialize a structure declarator.
+        *tpname* is the name of the structure, while *declname* is the
+        name used for the declarator. *pad_bytes* is the number of
+        padding bytes added at the end of the structure.
+        *fields* is a list of :class:`Declarator` instances.
 
-        @arg align_bytes: The resulting structure will be padded
-          to a multiple of C{align_bytes}.
-        @arg aligned_prime_to: If the resulting structure's size
-          is C{s}, then C{s//align_bytes} will be made prime to all
-          numbers in C{aligned_prime_to}.
+        *align_bytes* is an integer that causes the structure to be 
+        padded to an integer multiple of itself.
+        *aligned_prime_to* is a list of integers. If the resulting structure's size
+        is ``s``, then ``s//align_bytes`` will be made prime to all
+        numbers in *aligned_prime_to*. (Sounds obscure? It's needed
+        for avoiding bank conflicts in CUDA programming.)
         """
         self.tpname = tpname
         self.fields = fields
@@ -306,10 +325,20 @@ class GenerableStruct(Struct):
         assert calcsize(self.format) == self.bytes
 
     def make(self, **kwargs):
+        """Build a binary, packed representation of *self* in a 
+        :class:`str` instance with members set to the values specified 
+        in *kwargs*.
+        """
         from struct import pack
         return self._maker()(pack, **kwargs)
 
     def make_with_defaults(self, **kwargs):
+        """Build a binary, packed representation of *self* in a 
+        :class:`str` instance with members set to the values specified 
+        in *kwargs*.
+
+        Unlike :meth:`make`, not all members have to occur in *kwargs*.
+        """
         from struct import pack
         return self._maker(with_defaults=True)(pack, **kwargs)
 
@@ -328,9 +357,11 @@ class GenerableStruct(Struct):
         return eval(code)
 
     def struct_format(self):
+        """Return the format of the struct as digested by the :mod:`struct` module."""
         return self.format
 
     def __len__(self):
+        """Return the number of bytes occupied by this struct."""
         return self.bytes
 
 
@@ -530,6 +561,11 @@ class ArrayInitializer(Generable):
 
 class FunctionBody(Generable):
     def __init__(self, fdecl, body):
+        """Initialize a function definition. *fdecl* is expected to be
+        a :class:`FunctionDeclaration` instance, while *body* is a
+        :class:`Block`.
+        """
+
         self.fdecl = fdecl
         self.body = body
 

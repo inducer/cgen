@@ -2,7 +2,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to codepy's documentation!
+Welcome to CodePy's documentation!
 ==================================
 
 .. module:: codepy
@@ -12,7 +12,7 @@ metaprogramming:
 
 * Generating C source code.
 * Compiling this source code and dynamically loading it into the
-Python interpreter.
+  Python interpreter.
 
 Both capabilities are meant to be used together, but also work
 on their own. In particular, the code generation facilities work
@@ -23,7 +23,8 @@ with the GNU toolchain.
 A taste of CodePy
 -----------------
 
-This is a snippet of a typical CodePy program::
+This sample CodePy program builds a Boost.Python C++ module that returns
+the string "hello world"::
 
     from codepy.cgen import *
     from codepy.bpl import BoostPythonModule
@@ -35,8 +36,8 @@ This is a snippet of a typical CodePy program::
                 Block([Statement('return "hello world"')])
                 ))
 
-    from codepy.jit import guess_platform
-    cmod = mod.compile(guess_platform(), wait_on_error=True)
+    from codepy.jit import guess_toolchain
+    cmod = mod.compile(guess_toolchain(), wait_on_error=True)
 
     print cmod.greet()
 
@@ -55,7 +56,14 @@ its functionality accessible from Python. Boost.Python is only
 used at run time. CodePy has no install-time dependencies
 
 `Instructions <http://mathema.tician.de/software/install-boost>`_
-on how to install Boost.Python are available.
+on how to install Boost.Python are available. As described in the
+instructions, CodePy looks for the installation location of Boost.Python
+in :file:`$HOME/.aksetup-defaults.py` and :file:`/etc/aksetup-defaults.py`.
+
+.. note::
+
+  Boost.Python is not needed at all if CodePy is used to generate code 
+  for PyCuda.
 
 Contents
 --------

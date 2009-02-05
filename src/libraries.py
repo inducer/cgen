@@ -37,9 +37,9 @@ def get_aksetup_config():
 
 
 
-def add_boost_python(platform):
+def add_boost_python(toolchain):
     aksetup = get_aksetup_config()
-    platform.add_library(
+    toolchain.add_library(
             "boost-python",
             aksetup["BOOST_INC_DIR"],
             aksetup["BOOST_LIB_DIR"],
@@ -49,47 +49,47 @@ def add_boost_python(platform):
 
 
 
-def add_boost_numeric_bindings(platform):
+def add_boost_numeric_bindings(toolchain):
     aksetup = get_aksetup_config()
-    platform.add_library(
+    toolchain.add_library(
             "boost-numeric-bindings",
             aksetup["BOOST_BINDINGS_INC_DIR"], [], [])
 
 
 
 
-def add_numpy(platform):
+def add_numpy(toolchain):
     def get_numpy_incpath():
         from imp import find_module
         file, pathname, descr = find_module("numpy")
         from os.path import join
         return join(pathname, "core", "include")
 
-    platform.add_library("numpy", [get_numpy_incpath()], [], [])
+    toolchain.add_library("numpy", [get_numpy_incpath()], [], [])
 
 
 
 
-def add_py_module(platform, name):
+def add_py_module(toolchain, name):
     def get_module_include_path(name):
         from imp import find_module
         file, pathname, descr = find_module(name)
         from os.path import join
         return join(pathname, "..", "include")
 
-    platform.add_library(name, [get_module_include_path(name)], [], [])
+    toolchain.add_library(name, [get_module_include_path(name)], [], [])
 
 
 
-def add_pyublas(platform):
-    add_boost_python(platform)
-    add_numpy(platform)
-    add_py_module(platform, "pyublas")
+def add_pyublas(toolchain):
+    add_boost_python(toolchain)
+    add_numpy(toolchain)
+    add_py_module(toolchain, "pyublas")
 
 
 
 
-def add_hedge(platform):
-    add_pyublas(platform)
-    add_boost_numeric_bindings(platform)
-    add_py_module(platform, "hedge")
+def add_hedge(toolchain):
+    add_pyublas(toolchain)
+    add_boost_numeric_bindings(toolchain)
+    add_py_module(toolchain, "hedge")

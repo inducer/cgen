@@ -11,8 +11,8 @@ def make_greet_mod(greeting):
                 Block([Statement('return "%s"' % greeting)])
                 ))
 
-    from codepy.jit import guess_platform
-    return mod.compile(guess_platform(), wait_on_error=True)
+    from codepy.jit import guess_toolchain
+    return mod.compile(guess_toolchain(), wait_on_error=True)
 
 us = make_greet_mod("Hi there")
 aussie = make_greet_mod("G'day")

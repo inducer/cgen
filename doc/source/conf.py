@@ -198,6 +198,9 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_use_modindex = True
 
+autoclass_content = "both"
 
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/dev': None}
+intersphinx_mapping = {
+        'http://docs.python.org/dev': None,
+        'http://docs.scipy.org/doc/numpy/': None,
+        }

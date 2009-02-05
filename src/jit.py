@@ -86,16 +86,40 @@ def parse_python_makefile():
 
     
 from pytools import Record
-class Platform(Record):
+class Toolchain(Record):
+    """Abstract base class for tools used to link dynamic Python modules."""
+
     def __init__(self, *args, **kwargs):
         Record.__init__(self, *args, **kwargs)
         self.features = set()
 
+    def get_version(self):
+        """Return a string describing the exact version of the tools (compilers etc.)
+        involved in this toolchain.
+        
+        Implemented by subclasses.
+        """
+
+        raise NotImplementedError
+
     def abi_id(self):
+        """Return a picklable Python object that describes the ABI (Python version,
+        compiler versions, etc.) against which a Python module is compiled.
+        """
+
         import sys
         return [self.get_version(), sys.version]
 
     def add_library(self, feature, include_dirs, library_dirs, libraries):
+        """Add *include_dirs*, *library_dirs* and *libraries* describing the 
+        library named *feature* to the toolchain.
+
+        Future toolchain invocations will include compiler flags referencing
+        the respective resources.
+
+        Duplicate directories are ignored, as will be attempts to add the same
+        *feature* twice.
+        """
         if feature in self.features:
             return
 
@@ -111,8 +135,33 @@ class Platform(Record):
 
         self.libraries = libraries + self.libraries
 
+    def get_dependencies(self,  source_files):
+        """Return a list of header files referred to by *source_files.
         
+        Implemented by subclasses.
+        """
 
+        raise NotImplementedError
+
+    def build_extension(self, ext_file, source_files, debug=False):
+        """Create the extension file *ext_file* from *source_files*
+        by invoking the toolchain. Raise :exc:`CompileError` in
+        case of error.
+
+        If *debug* is True, print the commands executed.
+
+        Implemented by subclasses.
+        """
+        
+        raise NotImplementedError
+
+    def with_max_optimization(self):
+        """Turn on maximal optimization for this toolchain instance.
+
+        Implemented by subclasses.
+        """
+
+        raise NotImplementedError
 
 def get_output(cmdline):
     from subprocess import Popen, PIPE
@@ -120,7 +169,7 @@ def get_output(cmdline):
 
 
 
-class GCCPlatform(Platform):
+class GCCToolchain(Toolchain):
     def get_version(self):
         return get_output([self.cc, "--version"])
 
@@ -136,7 +185,7 @@ class GCCPlatform(Platform):
                 )
 
     def abi_id(self):
-        return Platform.abi_id(self) + [self._cmdline()]
+        return Toolchain.abi_id(self) + [self._cmdline()]
 
     def get_dependencies(self, source_files):
         lines = join_continued_lines(get_output(
@@ -195,8 +244,15 @@ def _erase_dir(dir):
 
 
 
-def extension_file_from_string(platform, ext_file, source_string, 
+def extension_file_from_string(toolchain, ext_file, source_string, 
         source_name="module.cpp", debug=False):
+    """Using *toolchain*, build the extension file named *ext_file*
+    from the source code in *source_string*, which is saved to a
+    temporary file named *source_name*. Raise :exc:`CompileError` in
+    case of error.
+
+    If *debug* is True, show commands involved in the build.
+    """
     from tempfile import mkdtemp
     src_dir = mkdtemp()
 
@@ -207,7 +263,7 @@ def extension_file_from_string(platform, ext_file, source_string,
     outf.close()
 
     try:
-        platform.build_extension(ext_file, [source_file], debug=debug)
+        toolchain.build_extension(ext_file, [source_file], debug=debug)
     finally:
         _erase_dir(src_dir)
 
@@ -312,8 +368,33 @@ class ModuleCacheDirManager(CleanupBase):
         _erase_dir(self.path)
 
 
-def extension_from_string(platform, name, source_string, source_name="module.cpp", 
+def extension_from_string(toolchain, name, source_string, source_name="module.cpp", 
         cache_dir=None, debug=False, wait_on_error=None, debug_recompile=False):
+    """Return a reference to the extension module *name*, which can be built
+    from the source code in *source_string* if necessary. Raise :exc:`CompileError` in
+    case of error.
+    
+    Compiled code is cached in *cache_dir* and available immediately if it has
+    been compiled at some point in the past. Compiler and Python API versions
+    as well as versions of include files are taken into account when examining 
+    the cache. If *cache_dir* is ``None``, a default location is assumed.
+    If it is ``False``, no caching is performed. Proper locking is performed
+    on the cache directory. Simultaneous use of the cache by multiple processes 
+    works as expected, but may lead to delays because of locking.
+
+    The code in *source_string* will be saved to a temporary file named 
+    *source_name* if it needs to be compiled.
+
+    If *debug* is ``True``, commands involed in the build are printed.
+
+    If *wait_on_error* is ``True``, the full path name of the temporary in
+    which a :exc:`CompileError` occurred is shown and the user is expected
+    to press a key before the temporary file gets deleted. If *wait_on_error*
+    is ``None``, it is taken to be the same as *debug*.
+
+    If *debug_recompile*, messages are printed indicating whether a recompilation
+    is taking place.
+    """
     if wait_on_error is None:
         wait_on_error = debug
 
@@ -339,7 +420,7 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
         return checksum.hexdigest()
 
     def get_dep_structure():
-        deps = list(platform.get_dependencies([source_file]))
+        deps = list(toolchain.get_dependencies([source_file]))
         deps.sort()
         return [(dep, os.stat(dep).st_mtime, get_file_md5sum(dep)) for dep in deps
                 if not dep == source_file]
@@ -355,7 +436,7 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
         checksum = md5.new()
 
         checksum.update(source_string)
-        checksum.update(str(platform.abi_id()))
+        checksum.update(str(toolchain.abi_id()))
         return checksum.hexdigest()
 
     def check_deps(dep_path):
@@ -420,7 +501,7 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
                     join(cache_dir, hex_checksum))
             source_path = mod_cache_dir_m.sub("source")
             deps_path = mod_cache_dir_m.sub("deps")
-            ext_file = mod_cache_dir_m.sub(name+platform.so_ext)
+            ext_file = mod_cache_dir_m.sub(name+toolchain.so_ext)
 
             if mod_cache_dir_m.existed:
                 if check_deps(deps_path) and check_source(source_path):
@@ -438,7 +519,7 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
                     print "recompiling for non-existent cache dir (%s)." % (
                             mod_cache_dir_m.path)
         else:
-            ext_file = join(temp_dir, source_name+platform.so_ext)
+            ext_file = join(temp_dir, source_name+toolchain.so_ext)
             done_path = None
             deps_path = None
             source_path = None
@@ -448,7 +529,7 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
         write_source(source_file)
 
         try:
-            platform.build_extension(ext_file, [source_file], debug=debug)
+            toolchain.build_extension(ext_file, [source_file], debug=debug)
         except CompileError:
             if wait_on_error:
                 raw_input("Examine %s, then press [Enter]:" % source_file)
@@ -477,13 +558,17 @@ def extension_from_string(platform, name, source_string, source_name="module.cpp
 
 
 # configuration ---------------------------------------------------------------
-class PlatformGuessError(Exception):
+class ToolchainGuessError(Exception):
     pass
 
 
 
 
-def guess_platform():
+def guess_toolchain():
+    """Guess and return a :class:`Toolchain` instance.
+
+    Raise :exc:`ToolchainGuessError` if no toolchain could be found.
+    """
     def strip_prefix(pfx, value):
         if value.startswith(pfx):
             return value[len(pfx):]
@@ -521,8 +606,8 @@ def guess_platform():
             if "-Wstrict-prototypes" in kwargs["cflags"]:
                 kwargs["cflags"].remove("-Wstrict-prototypes")
 
-            return GCCPlatform(**kwargs)
+            return GCCToolchain(**kwargs)
         else:
-            raise PlatformGuessError("unknown compiler")
+            raise ToolchainGuessError("unknown compiler")
     else:
-        raise PlatformGuessError("unknown compiler")
+        raise ToolchainGuessError("unknown compiler")
