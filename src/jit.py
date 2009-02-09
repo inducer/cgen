@@ -385,7 +385,7 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
     The code in *source_string* will be saved to a temporary file named 
     *source_name* if it needs to be compiled.
 
-    If *debug* is ``True``, commands involed in the build are printed.
+    If *debug* is ``True``, commands involved in the build are printed.
 
     If *wait_on_error* is ``True``, the full path name of the temporary in
     which a :exc:`CompileError` occurred is shown and the user is expected
