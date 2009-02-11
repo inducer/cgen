@@ -11,10 +11,10 @@ setup(name="codepy",
       version="0.90",
       description="Generate and execute native code at run time.",
       long_description="""
-      CodePy is a C metaprogramming toolkit for Python. It handles two aspects of
-      metaprogramming:
+      CodePy is a C/C++ metaprogramming toolkit for Python. It handles two aspects of
+      native-code metaprogramming:
 
-      * Generating C source code.
+      * Generating C/C++ source code.
       * Compiling this source code and dynamically loading it into the
         Python interpreter.
 
