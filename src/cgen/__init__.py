@@ -8,7 +8,7 @@ __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
 import numpy
 import numpy.linalg as la
-from pytools import memoize_method
+from pytools import memoize_method, memoize
 
 
 
