@@ -224,10 +224,7 @@ class GCCToolchain(Toolchain):
         for pfx in ["-O", "-g", "-march", "-mtune"]:
             cflags = remove_prefix(self.cflags, pfx)
 
-        return self.copy(cflags=cflags + [
-                "-O3", 
-                "-march=native", "-mtune=native", 
-                "-ftree-vectorize"])
+        return self.copy(cflags=cflags + [ "-O3" ])
 
 
 
@@ -577,7 +574,7 @@ def guess_toolchain():
 
     make_vars = parse_python_makefile()
 
-    cc_cmdline = (make_vars["CC"].split()
+    cc_cmdline = (make_vars["CXX"].split()
             + make_vars["CFLAGS"].split()
             + make_vars["CFLAGSFORSHARED"].split())
 
@@ -600,14 +597,11 @@ def guess_toolchain():
             defines=[],
             )
 
-    if kwargs["cc"] in ["gcc", "cc"]:
-        version = get_output([kwargs["cc"], "--version"])
-        if version.startswith("gcc"):
-            if "-Wstrict-prototypes" in kwargs["cflags"]:
-                kwargs["cflags"].remove("-Wstrict-prototypes")
+    version = get_output([kwargs["cc"], "--version"])
+    if "GCC" in version:
+	if "-Wstrict-prototypes" in kwargs["cflags"]:
+	    kwargs["cflags"].remove("-Wstrict-prototypes")
 
-            return GCCToolchain(**kwargs)
-        else:
-            raise ToolchainGuessError("unknown compiler")
+	return GCCToolchain(**kwargs)
     else:
-        raise ToolchainGuessError("unknown compiler")
+	raise ToolchainGuessError("unknown compiler")
