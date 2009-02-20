@@ -598,7 +598,7 @@ def guess_toolchain():
             )
 
     version = get_output([kwargs["cc"], "--version"])
-    if "GCC" in version:
+    if "Free Software Foundation" in version:
 	if "-Wstrict-prototypes" in kwargs["cflags"]:
 	    kwargs["cflags"].remove("-Wstrict-prototypes")
 
