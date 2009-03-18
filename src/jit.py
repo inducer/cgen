@@ -213,6 +213,9 @@ class GCCToolchain(Toolchain):
         result = call(cc_cmdline)
 
         if result != 0:
+            import sys
+            print >> sys.stderr, "FAILED compiler invocation:", \
+                    " ".join(cc_cmdline)
             raise CompileError, "module compilation failed"
 
     def with_max_optimization(self):
