@@ -12,6 +12,39 @@ from pytools import memoize
 
 
 
+# aksetup handling ------------------------------------------------------------
+def expand_str(s, options):
+    import re
+
+    def my_repl(match):
+        sym = match.group(1)
+        try:
+            repl = options[sym]
+        except KeyError:
+            from os import environ
+            repl = environ[sym]
+
+        return expand_str(repl, options)
+
+    return re.subn(r"\$\{([a-zA-Z0-9_]+)\}", my_repl, s)[0]
+
+def expand_value(v, options):
+    if isinstance(v, (str, unicode)):
+        return expand_str(v, options)
+    elif isinstance(v, list):
+        return [expand_value(i, options) for i in v]
+    else:
+        return v
+
+
+def expand_options(options):
+    for k in options.keys():
+        options[k] = expand_value(options[k], options)
+    return options
+
+
+
+
 @memoize
 def get_aksetup_config():
     def update_config(fname):
@@ -32,7 +65,23 @@ def get_aksetup_config():
     if not sys.platform.lower().startswith("win"):
         update_config(expanduser("/etc/aksetup-defaults.py"))
 
-    return config
+    return expand_options(config)
+
+
+
+
+# libraries -------------------------------------------------------------------
+def get_boost_compiler(aksetup):
+    return aksetup.get("BOOST_COMPILER", "gcc43")
+
+
+
+
+def get_boost_libname(basename, aksetup):
+    try:
+        return aksetup["BOOST_%s_LIBNAME" % basename.upper()]
+    except KeyError:
+        return ["boost_%s-%s-mt" % (basename, get_boost_compiler(aksetup))]
 
 
 
@@ -43,7 +92,7 @@ def add_boost_python(toolchain):
             "boost-python",
             aksetup["BOOST_INC_DIR"],
             aksetup["BOOST_LIB_DIR"],
-            aksetup["BOOST_PYTHON_LIBNAME"],
+            get_boost_libname("python", aksetup)
             )
 
 
