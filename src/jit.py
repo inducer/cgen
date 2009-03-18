@@ -408,8 +408,13 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
             os.mkdir(cache_dir)
 
     def get_file_md5sum(fname):
-        import md5
-        checksum = md5.new()
+        try:
+            import hashlib
+            checksum = hashlib.md5()
+        except ImportError:
+            # for Python << 2.5
+            import md5
+            checksum = md5.new()
 
         inf = open(fname)
         checksum.update(inf.read())
@@ -429,8 +434,13 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
         outf.close()
 
     def calculate_hex_checksum():
-        import md5
-        checksum = md5.new()
+        try:
+            import hashlib
+            checksum = hashlib.md5()
+        except ImportError:
+            # for Python << 2.5
+            import md5
+            checksum = md5.new()
 
         checksum.update(source_string)
         checksum.update(str(toolchain.abi_id()))
