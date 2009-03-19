@@ -37,11 +37,17 @@ setup(name="codepy",
         'Topic :: Utilities',
         ],
 
+
+
       author=u"Andreas Kloeckner",
       url="http://mathema.tician.de/software/codepy",
       author_email="inform@tiker.net",
       license = "MIT",
+
       packages=["codepy", "codepy.cgen"],
+      install_requires=[
+          "pytools>=8",
+          ],
       package_dir={"codepy": "src"},
       zip_safe=False,
      )

@@ -163,15 +163,13 @@ class Toolchain(Record):
 
         raise NotImplementedError
 
-def get_output(cmdline):
-    from subprocess import Popen, PIPE
-    return Popen(cmdline, stdout=PIPE).communicate()[0]
 
 
 
 class GCCToolchain(Toolchain):
     def get_version(self):
-        return get_output([self.cc, "--version"])
+        from pytools.prefork import call_capture_stdout
+        return call_capture_stdout([self.cc, "--version"])
 
     def _cmdline(self):
         return (
@@ -188,7 +186,8 @@ class GCCToolchain(Toolchain):
         return Toolchain.abi_id(self) + [self._cmdline()]
 
     def get_dependencies(self, source_files):
-        lines = join_continued_lines(get_output(
+        from pytools.prefork import call_capture_stdout
+        lines = join_continued_lines(call_capture_stdout(
                 [self.cc] 
                 + ["-M"]
                 + ["-D%s" % define for define in self.defines]
@@ -206,7 +205,7 @@ class GCCToolchain(Toolchain):
                 + ["-o%s" % ext_file]
                 + source_files
                 )
-        from subprocess import call
+        from pytools.prefork import call
         if debug:
             print " ".join(cc_cmdline)
 
@@ -610,7 +609,8 @@ def guess_toolchain():
             defines=[],
             )
 
-    version = get_output([kwargs["cc"], "--version"])
+    from pytools.prefork import call_capture_stdout
+    version = call_capture_stdout([kwargs["cc"], "--version"])
     if "Free Software Foundation" in version:
 	if "-Wstrict-prototypes" in kwargs["cflags"]:
 	    kwargs["cflags"].remove("-Wstrict-prototypes")
