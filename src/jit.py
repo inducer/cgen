@@ -406,8 +406,12 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
         cache_dir = join(gettempdir(), 
                 "codepy-compiler-cache-v4-uid%s" % os.getuid())
 
-        if not exists(cache_dir):
+        try:
             os.mkdir(cache_dir)
+        except OSError, e:
+            from errno import EEXIST
+            if e.errno != EEXIST:
+                raise
 
     def get_file_md5sum(fname):
         try:
