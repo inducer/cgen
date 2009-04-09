@@ -110,6 +110,10 @@ class POD(Declarator):
     def struct_format(self):
         return self.dtype.char
 
+    def alignment_requirement(self):
+        from struct import calcsize
+        return calcsize(self.struct_format())
+
     def default_value(self):
         return 0
 
@@ -145,6 +149,9 @@ class NestedDeclarator(Declarator):
 
     def struct_format(self):
         return self.subdecl.struct_format()
+
+    def alignment_requirement(self):
+        return self.subdecl.alignment_requirement()
 
     def struct_maker_code(self, data):
         return self.subdecl.struct_maker_code(data)
@@ -203,6 +210,11 @@ class Pointer(NestedDeclarator):
     def struct_format(self):
         return "P"
 
+    def alignment_requirement(self):
+        from struct import calcsize
+        return calcsize(self.struct_format())
+
+
 class Reference(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
@@ -229,6 +241,9 @@ class ArrayOf(NestedDeclarator):
             return "P"
         else:
             return "%d%s" % (self.count, self.subdecl.struct_format())
+
+    def alignment_requirement(self):
+        return self.subdecl.alignment_requirement()
 
     def default_value(self):
         return self.count*[self.subdecl.default_value()]
@@ -283,15 +298,23 @@ class Struct(Declarator):
                     yield "  " + f_line
             if self.pad_bytes:
                 yield "  unsigned char _codepy_pad[%d];" % self.pad_bytes
-            yield "}"
+            yield "} " + self.struct_attributes()
         return get_tp(), self.declname
+
+    def alignment_requirement(self):
+        return max(f.alignment_requirement() for f in self.fields)
+
+    def struct_attributes(self):
+        return ""
+
+
 
 
 
 
 class GenerableStruct(Struct):
     def __init__(self, tpname, fields, declname=None,
-            align_bytes=1, aligned_prime_to=[]):
+            align_bytes=None, aligned_prime_to=[]):
         """Initialize a structure declarator.
         *tpname* is the name of the structure, while *declname* is the
         name used for the declarator. *pad_bytes* is the number of
@@ -305,13 +328,20 @@ class GenerableStruct(Struct):
         numbers in *aligned_prime_to*. (Sounds obscure? It's needed
         for avoiding bank conflicts in CUDA programming.)
         """
-        self.tpname = tpname
-        self.fields = fields
-        self.declname = declname
 
-        format = "".join(f.struct_format() for f in self.fields)
+        format = "".join(f.struct_format() for f in fields)
         from struct import calcsize
         bytes = calcsize(format)
+
+        natural_align_bytes = max(f.alignment_requirement() for f in fields)
+        if align_bytes is None:
+            align_bytes = natural_align_bytes
+        elif align_bytes < natural_align_bytes:
+            from warnings import warn
+            warn("requested struct alignment smaller than natural alignment")
+
+        self.align_bytes = align_bytes
+
         padded_bytes = ((bytes + align_bytes - 1) // align_bytes) * align_bytes
 
         def satisfies_primality(n):
@@ -325,14 +355,22 @@ class GenerableStruct(Struct):
             padded_bytes += align_bytes
 
         Struct.__init__(self, tpname, fields, declname, padded_bytes - bytes)
+
         if self.pad_bytes:
-            self.format = "%s%dx" % (format, self.pad_bytes)
+            self.format = format + "%dx" % self.pad_bytes
             self.bytes = padded_bytes
         else:
             self.format = format
             self.bytes = bytes
 
         assert calcsize(self.format) == self.bytes
+
+    # until nvcc bug is fixed
+    #def struct_attributes(self):
+        #return "__attribute__ ((packed))"
+
+    def alignment_requirement(self):
+        return self.align_bytes
 
     def make(self, **kwargs):
         """Build a binary, packed representation of *self* in a 
