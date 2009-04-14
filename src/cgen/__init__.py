@@ -632,6 +632,9 @@ class Block(Generable):
     def __init__(self, contents=[]):
         self.contents = contents[:]
 
+        for item in contents:
+            assert isinstance(item, Generable)
+
     def generate(self):
         yield "{"
         for item in self.contents:
