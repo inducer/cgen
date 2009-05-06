@@ -46,6 +46,5 @@ setup(name="codepy",
       install_requires=[
           "pytools>=8",
           ],
-      package_dir={"codepy": "src"},
       zip_safe=False,
      )
