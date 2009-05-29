@@ -171,6 +171,22 @@ class GCCToolchain(Toolchain):
         from pytools.prefork import call_capture_stdout
         return call_capture_stdout([self.cc, "--version"])
 
+    def get_version_tuple(self):
+        ver = self.get_version()
+        lines = ver.split("\n")
+        words = lines[0].split()
+        numbers = words[2].split(".")
+
+        result = []
+        for n in numbers:
+            try:
+                result.append(int(n))
+            except ValueError:
+                # not an integer? too bad.
+                break
+
+        return tuple(result)
+
     def _cmdline(self):
         return (
                 [self.cc] 
@@ -205,6 +221,7 @@ class GCCToolchain(Toolchain):
                 + ["-o%s" % ext_file]
                 + source_files
                 )
+
         from pytools.prefork import call
         if debug:
             print " ".join(cc_cmdline)
@@ -226,7 +243,12 @@ class GCCToolchain(Toolchain):
         for pfx in ["-O", "-g", "-march", "-mtune"]:
             cflags = remove_prefix(self.cflags, pfx)
 
-        return self.copy(cflags=cflags + [ "-O3" ])
+        oflags = ["-O3"]
+        if self.get_version_tuple() >= (4,3):
+            oflags.extend(["-march=native", "-mtune=native", 
+                "-ftree-vectorize", ])
+
+        return self.copy(cflags=cflags + oflags)
 
 
 
