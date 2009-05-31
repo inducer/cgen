@@ -19,14 +19,26 @@ class Argument:
         self.dtype = numpy.dtype(dtype)
         self.name = name
 
+    def __repr__(self):
+        return "%s(%r, %s)" % (
+                self.__class__.__name__,
+                self.name,
+                self.dtype)
+
 class VectorArg(Argument):
     def declarator(self):
         return Value("numpy_array<%s>" % dtype_to_ctype(self.dtype),
                 self.name+"_ary")
 
+    struct_char = "P"
+
 class ScalarArg(Argument):
     def declarator(self):
         return Value(dtype_to_ctype(self.dtype), self.name)
+
+    @property
+    def struct_char(self):
+        return self.dtype.char
 
 
 
