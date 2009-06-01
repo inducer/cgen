@@ -496,14 +496,14 @@ class While(Loop):
         return "while (%s)" % self.condition
 
 class For(Loop):
-    def __init__(self, start, condition, end, body):
+    def __init__(self, start, condition, update, body):
         self.start = start
         self.condition = condition
-        self.end = end
+        self.update = update
         self.body = body
 
     def intro_line(self):
-        return "for (%s; %s; %s)" % (self.start, self.condition, self.end)
+        return "for (%s; %s; %s)" % (self.start, self.condition, self.update)
 
 class DoWhile(Loop):
     def __init__(self, condition, body):
