@@ -131,6 +131,18 @@ class ElementwiseKernel:
 
 
 
+@memoize
+def make_linear_comb_kernel(dtype, comp_count):
+    from pytools import flatten
+    return ElementwiseKernel([VectorArg(dtype, "result")] + list(flatten(
+            (ScalarArg(dtype, "a%d_fac" % i), VectorArg(dtype, "a%d" % i))
+            for i in range(comp_count))),
+            "result[i] = " + " + ".join("a%d_fac*a%d[i]" % (i, i) for i in range(comp_count))
+            )
+
+
+
+
 if __name__ == "__main__":
     import pyublas
 

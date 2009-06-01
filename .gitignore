@@ -2,6 +2,7 @@ build
 .*.sw[po]
 *~
 *.pyc
+*.pyo
 *.egg-info
 MANIFEST
 dist
