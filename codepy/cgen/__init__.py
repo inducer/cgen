@@ -22,6 +22,9 @@ def is_64_bit_platform():
 
 
 def dtype_to_ctype(dtype):
+    if dtype is None:
+        raise ValueError("dtype may not be None")
+
     dtype = numpy.dtype(dtype)
     if dtype == numpy.int64 and is_64_bit_platform():
         return "long"
