@@ -80,7 +80,7 @@ def get_elwise_module(arguments, operation, name="kernel"):
             FunctionBody(
                 FunctionDeclaration(
                     Value("void", name), 
-                    [POD(numpy.intp, "codepy_length")] +
+                    [POD(numpy.uintp, "codepy_length")] +
                     [arg.declarator() for arg in arguments]),
                 body))
 
