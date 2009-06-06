@@ -29,7 +29,7 @@ def dtype_to_ctype(dtype):
     if dtype == numpy.int64 and is_64_bit_platform():
         return "long"
     elif dtype == numpy.uint64 and is_64_bit_platform():
-        return "unsinged long"
+        return "unsigned long"
     elif dtype == numpy.int32:
         return "int"
     elif dtype == numpy.uint32:
