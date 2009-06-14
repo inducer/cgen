@@ -14,8 +14,9 @@ def make_greet_mod(greeting):
     from codepy.jit import guess_toolchain
     return mod.compile(guess_toolchain(), wait_on_error=True)
 
-us = make_greet_mod("Hi there")
-aussie = make_greet_mod("G'day")
+def test_identical_symbols():
+    us = make_greet_mod("Hi there")
+    aussie = make_greet_mod("G'day")
 
-assert us.greet() != aussie.greet()
-print us.greet(), aussie.greet()
+    assert us.greet() != aussie.greet()
+    print us.greet(), aussie.greet()
