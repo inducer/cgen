@@ -128,19 +128,35 @@ class ElementwiseKernel:
         from pytools import single_valued
         size = single_valued(args[i].size for i in self.vec_arg_indices)
 
+        # no need to do type checking--pyublas does that for us
         self.func(size, *args)
 
 
 
 
 @memoize
-def make_linear_comb_kernel(dtype, comp_count):
+def make_linear_comb_kernel_with_result_dtype(
+        result_dtype, scalar_dtypes, vector_dtypes):
+    comp_count = len(vector_dtypes)
     from pytools import flatten
-    return ElementwiseKernel([VectorArg(dtype, "result")] + list(flatten(
-            (ScalarArg(dtype, "a%d_fac" % i), VectorArg(dtype, "a%d" % i))
+    return ElementwiseKernel([VectorArg(result_dtype, "result")] + list(flatten(
+            (ScalarArg(scalar_dtypes[i], "a%d_fac" % i), 
+                VectorArg(vector_dtypes[i], "a%d" % i))
             for i in range(comp_count))),
-            "result[i] = " + " + ".join("a%d_fac*a%d[i]" % (i, i) for i in range(comp_count))
-            )
+            "result[i] = " + " + ".join("a%d_fac*a%d[i]" % (i, i) 
+                for i in range(comp_count)))
+
+
+
+
+@memoize
+def make_linear_comb_kernel(scalar_dtypes, vector_dtypes):
+    from pytools import common_dtype
+    result_dtype = common_dtype(scalar_dtypes+vector_dtypes)
+
+    return make_linear_comb_kernel_with_result_dtype(
+            result_dtype, scalar_dtypes, vector_dtypes), result_dtype
+
 
 
 
