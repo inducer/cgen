@@ -27,7 +27,7 @@ class Argument:
 
 class VectorArg(Argument):
     def declarator(self):
-        return Value("numpy_array<%s>" % dtype_to_ctype(self.dtype),
+        return Value("numpy_array<%s >" % dtype_to_ctype(self.dtype),
                 self.name+"_ary")
 
     struct_char = "P"
@@ -63,7 +63,7 @@ def get_elwise_module(arguments, operation, name="kernel"):
 
     body = Block([
         Initializer(
-            Value("numpy_array<%s>::iterator" 
+            Value("numpy_array<%s >::iterator"
                 % dtype_to_ctype(varg.dtype),
                 varg.name),
             varg.name + "_ary.begin()")

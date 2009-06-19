@@ -46,6 +46,10 @@ def dtype_to_ctype(dtype):
         return "float"
     elif dtype == numpy.float64:
         return "double"
+    elif dtype == numpy.complex64:
+        return "std::complex<float>"
+    elif dtype == numpy.complex128:
+        return "std::complex<double>"
     else:
         raise ValueError, "unable to map dtype '%s'" % dtype
 
