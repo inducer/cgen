@@ -54,7 +54,7 @@ def get_elwise_module(arguments, operation, name="kernel"):
 
     mod = BoostPythonModule()
     mod.add_to_module([
-        Include("pyublas/numpy.hpp"), 
+        Include("pyublas/numpy.hpp"),
         Line(),
         S("namespace ublas = boost::numeric::ublas"),
         S("using namespace pyublas"),
@@ -69,17 +69,19 @@ def get_elwise_module(arguments, operation, name="kernel"):
             varg.name + "_ary.begin()")
         for varg in arguments if isinstance(varg, VectorArg)])
 
-    body.append(
+    body.extend([
+        Line(),
         For("unsigned i = 0",
             "i < codepy_length",
             "++i",
             Block([S(operation)])
-            ))
-                
+            )
+        ])
+
     mod.add_function(
             FunctionBody(
                 FunctionDeclaration(
-                    Value("void", name), 
+                    Value("void", name),
                     [POD(numpy.uintp, "codepy_length")] +
                     [arg.declarator() for arg in arguments]),
                 body))
@@ -107,13 +109,13 @@ def get_elwise_kernel(arguments, operation, name="kernel", toolchain=None):
 
 
 class ElementwiseKernel:
-    def __init__(self, arguments, operation, 
+    def __init__(self, arguments, operation,
             name="kernel", toolchain=None):
         self.arguments = arguments
         self.func = get_elwise_kernel(
                 arguments, operation, name, toolchain)
 
-        self.vec_arg_indices = [i for i, arg in enumerate(arguments) 
+        self.vec_arg_indices = [i for i, arg in enumerate(arguments)
                 if isinstance(arg, VectorArg)]
 
         assert self.vec_arg_indices, \
