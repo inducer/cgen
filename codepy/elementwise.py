@@ -52,7 +52,7 @@ def get_elwise_module(arguments, operation, name="kernel"):
 
     S = Statement
 
-    mod = BoostPythonModule()
+    mod = BoostPythonModule(max_arity=len(arguments)+1)
     mod.add_to_module([
         Include("pyublas/numpy.hpp"),
         Line(),
