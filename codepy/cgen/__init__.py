@@ -100,14 +100,14 @@ class Declarator(Generable):
             return "%s %s" % (tp_lines, tp_decl)
 
 class POD(Declarator):
-    """A simple declarator: The type is given as a :class:`numpy.dtype` 
+    """A simple declarator: The type is given as a :class:`numpy.dtype`
     and the *name* is given as a string.
     """
 
     def __init__(self, dtype, name):
         self.dtype = numpy.dtype(dtype)
         self.name = name
-        
+
     def get_decl_pair(self):
         return [dtype_to_ctype(self.dtype)], self.name
 
@@ -126,11 +126,11 @@ class POD(Declarator):
 
 class Value(Declarator):
     """A simple declarator: *typename* and *name* are given as strings."""
-    
+
     def __init__(self, typename, name):
         self.typename = typename
         self.name = name
-        
+
     def get_decl_pair(self):
         return [self.typename], self.name
 
@@ -150,7 +150,7 @@ class NestedDeclarator(Declarator):
     def __init__(self, subdecl):
         self.subdecl = subdecl
 
-    @property 
+    @property
     def name(self):
         return self.subdecl.name
 
@@ -266,7 +266,7 @@ class FunctionDeclaration(NestedDeclarator):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
 
         return sub_tp, ("%s(%s)" % (
-            sub_decl, 
+            sub_decl,
             ", ".join(ad.inline() for ad in self.arg_decls)))
 
     def struct_maker_code(self, data):
@@ -298,7 +298,7 @@ class Struct(Declarator):
             if self.tpname is not None:
                 yield "struct %s" % self.tpname
             else:
-                yield "struct" 
+                yield "struct"
             yield "{"
             for f in self.fields:
                 for f_line in f.generate():
@@ -328,7 +328,7 @@ class GenerableStruct(Struct):
         padding bytes added at the end of the structure.
         *fields* is a list of :class:`Declarator` instances.
 
-        *align_bytes* is an integer that causes the structure to be 
+        *align_bytes* is an integer that causes the structure to be
         padded to an integer multiple of itself.
         *aligned_prime_to* is a list of integers. If the resulting structure's size
         is ``s``, then ``s//align_bytes`` will be made prime to all
@@ -380,16 +380,16 @@ class GenerableStruct(Struct):
         return self.align_bytes
 
     def make(self, **kwargs):
-        """Build a binary, packed representation of *self* in a 
-        :class:`str` instance with members set to the values specified 
+        """Build a binary, packed representation of *self* in a
+        :class:`str` instance with members set to the values specified
         in *kwargs*.
         """
         from struct import pack
         return self._maker()(pack, **kwargs)
 
     def make_with_defaults(self, **kwargs):
-        """Build a binary, packed representation of *self* in a 
-        :class:`str` instance with members set to the values specified 
+        """Build a binary, packed representation of *self* in a
+        :class:`str` instance with members set to the values specified
         in *kwargs*.
 
         Unlike :meth:`make`, not all members have to occur in *kwargs*.
@@ -404,7 +404,7 @@ class GenerableStruct(Struct):
                 return "%s=%s" % (f.name, repr(f.default_value()))
             else:
                 return f.name
-            
+
         code = "lambda pack, %s: pack(%s, %s)" % (
                 ", ".join(format_arg(f) for f in self.fields),
                 repr(self.struct_format()),
@@ -654,17 +654,43 @@ class Block(Generable):
 
     def extend(self, data):
         self.contents.extend(data)
-        
+
     def extend_log_block(self, descr, data):
         self.contents.append(Comment(descr))
         self.contents.extend(data)
         self.contents.append(Line())
-        
+
 class Module(Block):
     def generate(self):
         for c in self.contents:
             for line in c.generate():
                 yield line
+
+class PrivateNamespace(Block):
+    def get_namespace_name(self):
+        try:
+            import hashlib
+            checksum = hashlib.md5()
+        except ImportError:
+            # for Python << 2.5
+            import md5
+            checksum = md5.new()
+
+        for c in self.contents:
+            for line in c.generate():
+                checksum.update(line)
+
+        return "private_namespace_"+checksum.hexdigest()
+
+    def generate(self):
+        yield "namespace "+self.get_namespace_name()
+        yield "{"
+        for item in self.contents:
+            for item_line in item.generate():
+                yield "  " + item_line
+        yield "}"
+        yield ""
+        yield "using namespace %s;" % self.get_namespace_name()
 
 def _test():
     s = Struct("yuck", [
@@ -680,7 +706,7 @@ def _test():
         POD(numpy.uint8, "reserved"),
         POD(numpy.uint32, "b_global_base"),
         ])
-    f_decl = FunctionDeclaration(POD(numpy.uint16, "get_num"), [ 
+    f_decl = FunctionDeclaration(POD(numpy.uint16, "get_num"), [
         POD(numpy.uint8, "reserved"),
         POD(numpy.uint32, "b_global_base"),
         ])
