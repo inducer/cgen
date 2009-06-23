@@ -36,6 +36,34 @@ class BoostPythonModule(object):
                     "boost::python::def(\"%s\", &%s)" % (
                         func.fdecl.name, func.fdecl.name)))
 
+    def add_struct(self, struct, py_name=None, py_member_name_transform=lambda x: x):
+        from codepy.cgen import Block, Line, Statement, Typedef, Value
+
+        if py_name is None:
+            py_name = struct.tpname
+
+        self.mod_body.append(struct)
+
+        member_defs = []
+        for f in struct.fields:
+            py_f_name = py_member_name_transform(f.name)
+            tp_lines, declarator = f.get_decl_pair()
+            if tp_lines[0].startswith("numpy_"):
+                member_defs.append(".def(pyublas::by_value_rw_member(\"%s\", &cl::%s))"
+                        % (py_f_name, f.name))
+            else:
+                member_defs.append(".def_readwrite(\"%s\", &cl::%s)"
+                        % (py_f_name, f.name))
+
+        self.init_body.append(
+            Block([
+                Typedef(Value(struct.tpname, "cl")),
+                Line(),
+                Statement(
+                    "boost::python::class_<cl>(\"%s\")%s" % (
+                        py_name, "".join(member_defs))),
+                ]))
+
     def generate(self):
         """Generate (i.e. yield) the source code of the 
         module line-by-line.

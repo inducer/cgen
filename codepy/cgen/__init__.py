@@ -82,12 +82,12 @@ class Declarator(Generable):
             yield "%s %s%s" % (tp_lines[-1], tp_decl, sc)
 
     def get_decl_pair(self):
-        """Return a tuple ``(typename, rhs)``.
+        """Return a tuple ``(type_lines, rhs)``.
 
-        *typename* is a list of lines (most often just a single one)
-        describing the type of this declarator. *rhs* is the right-
-        hand side that actually contains the function/array/constness 
-        notation making up the bulk of the declarator syntax.
+        *type_lines* is a non-empty list of lines (most often just a
+        single one) describing the type of this declarator. *rhs* is the right-
+        hand side that actually contains the function/array/constness notation
+        making up the bulk of the declarator syntax.
         """
 
     def inline(self, with_semicolon=True):
