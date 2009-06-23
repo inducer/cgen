@@ -9,7 +9,7 @@ __copyright__ = "Copyright (C) 2009 Andreas Kloeckner"
 
 from pytools import memoize
 import numpy
-from codepy.cgen import Value, dtype_to_ctype
+from codepy.cgen import POD, Value, dtype_to_ctype
 
 
 
@@ -30,11 +30,17 @@ class VectorArg(Argument):
         return Value("numpy_array<%s >" % dtype_to_ctype(self.dtype),
                 self.name+"_ary")
 
+    def arg_name(self):
+        return self.name + "_ary"
+
     struct_char = "P"
 
 class ScalarArg(Argument):
     def declarator(self):
-        return Value(dtype_to_ctype(self.dtype), self.name)
+        return POD(self.dtype, self.name)
+
+    def arg_name(self):
+        return self.name
 
     @property
     def struct_char(self):
@@ -43,19 +49,21 @@ class ScalarArg(Argument):
 
 
 
-def get_elwise_module(arguments, operation, name="kernel"):
+def get_elwise_module_descriptor(arguments, operation, name="kernel"):
     from codepy.bpl import BoostPythonModule
 
     from codepy.cgen import FunctionBody, FunctionDeclaration, \
-            Value, POD, For, Initializer, Include, Statement, \
+            Value, POD, Struct, For, Initializer, Include, Statement, \
             Line, Block
 
     S = Statement
 
-    mod = BoostPythonModule(max_arity=len(arguments)+1)
-    mod.add_to_module([
+    mod = BoostPythonModule()
+    mod.add_to_preamble([
         Include("pyublas/numpy.hpp"),
-        Line(),
+        ])
+
+    mod.add_to_module([
         S("namespace ublas = boost::numeric::ublas"),
         S("using namespace pyublas"),
         Line(),
@@ -66,8 +74,12 @@ def get_elwise_module(arguments, operation, name="kernel"):
             Value("numpy_array<%s >::iterator"
                 % dtype_to_ctype(varg.dtype),
                 varg.name),
-            varg.name + "_ary.begin()")
-        for varg in arguments if isinstance(varg, VectorArg)])
+            "args.%s_ary.begin()" % varg.name)
+        for varg in arguments if isinstance(varg, VectorArg)]
+        +[Initializer(
+            sarg.declarator(), "args." + sarg.name)
+        for sarg in arguments if isinstance(sarg, ScalarArg)]
+        )
 
     body.extend([
         Line(),
@@ -78,19 +90,24 @@ def get_elwise_module(arguments, operation, name="kernel"):
             )
         ])
 
+    arg_struct = Struct("arg_struct", 
+            [arg.declarator() for arg in arguments])
+    mod.add_struct(arg_struct, "ArgStruct")
+    mod.add_to_module([Line()])
+
     mod.add_function(
             FunctionBody(
                 FunctionDeclaration(
                     Value("void", name),
-                    [POD(numpy.uintp, "codepy_length")] +
-                    [arg.declarator() for arg in arguments]),
+                    [POD(numpy.uintp, "codepy_length"),
+                        Value("arg_struct", "args")]),
                 body))
 
     return mod
 
 
 
-def get_elwise_kernel(arguments, operation, name="kernel", toolchain=None):
+def get_elwise_module_binary(arguments, operation, name="kernel", toolchain=None):
     if toolchain is None:
         from codepy.jit import guess_toolchain
         toolchain = guess_toolchain()
@@ -101,9 +118,15 @@ def get_elwise_kernel(arguments, operation, name="kernel", toolchain=None):
     toolchain = toolchain.copy()
     add_pyublas(toolchain)
 
-    return getattr(
-            get_elwise_module(arguments, operation, name)
-            .compile(toolchain, wait_on_error=True), name)
+    return get_elwise_module_descriptor(arguments, operation, name) \
+            .compile(toolchain, wait_on_error=True)
+
+
+
+
+def get_elwise_kernel(arguments, operation, name="kernel", toolchain=None):
+    return getattr(get_elwise_module_binary(
+        arguments, operation, name, toolchain), name)
 
 
 
@@ -112,8 +135,9 @@ class ElementwiseKernel:
     def __init__(self, arguments, operation,
             name="kernel", toolchain=None):
         self.arguments = arguments
-        self.func = get_elwise_kernel(
+        self.module = get_elwise_module_binary(
                 arguments, operation, name, toolchain)
+        self.func = getattr(self.module, name)
 
         self.vec_arg_indices = [i for i, arg in enumerate(arguments)
                 if isinstance(arg, VectorArg)]
@@ -129,7 +153,13 @@ class ElementwiseKernel:
         size = single_valued(args[i].size for i in self.vec_arg_indices)
 
         # no need to do type checking--pyublas does that for us
-        self.func(size, *args)
+        arg_struct = self.module.ArgStruct()
+        for arg_descr, arg in zip(self.arguments, args):
+            setattr(arg_struct, arg_descr.arg_name(), arg)
+
+        assert not arg_struct.__dict__
+
+        self.func(size, arg_struct)
 
 
 
