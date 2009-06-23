@@ -4,21 +4,27 @@
 
 
 class BoostPythonModule(object):
-    def __init__(self, name="module", max_arity=None):
+    def __init__(self, name="module", max_arity=None,
+            use_private_namespace=True):
         self.name = name
+        self.preamble = []
         self.mod_body = []
         self.init_body = []
 
         self.max_arity = max_arity
+        self.use_private_namespace = use_private_namespace
 
     def add_to_init(self, body):
-        """Add the blocks or statements contained in the iterable *body* to the 
+        """Add the blocks or statements contained in the iterable *body* to the
         module initialization function.
         """
         self.init_body.extend(body)
 
+    def add_to_preamble(self, pa):
+        self.preamble.extend(pa)
+
     def add_to_module(self, body):
-        """Add the :class:`codepy.cgen.Generable` instances in the iterable 
+        """Add the :class:`codepy.cgen.Generable` instances in the iterable
         *body* to the body of the module *self*.
         """
 
@@ -65,18 +71,26 @@ class BoostPythonModule(object):
                 ]))
 
     def generate(self):
-        """Generate (i.e. yield) the source code of the 
+        """Generate (i.e. yield) the source code of the
         module line-by-line.
         """
 
-        from codepy.cgen import Block, Module, Include, Line, Define
+        from codepy.cgen import Block, Module, Include, Line, Define, \
+                PrivateNamespace
+
         body = []
 
         if self.max_arity is not None:
             body.append(Define("BOOST_PYTHON_MAX_ARITY", self.max_arity))
-        
-        body += ([Include("boost/python.hpp"), Line()]
-                + self.mod_body
+
+        if self.use_private_namespace:
+            mod_body = [PrivateNamespace(self.mod_body)]
+        else:
+            mod_body = self.mod_body
+
+        body += ([Include("boost/python.hpp")]
+                + self.preamble + [Line()]
+                + mod_body
                 + [Line(), Line("BOOST_PYTHON_MODULE(%s)" % self.name)]
                 + [Block(self.init_body)])
 
@@ -94,6 +108,6 @@ class BoostPythonModule(object):
         add_boost_python(toolchain)
 
         from codepy.jit import extension_from_string
-        return extension_from_string(toolchain, self.name, 
+        return extension_from_string(toolchain, self.name,
                 str(self.generate())+"\n", **kwargs)
 
