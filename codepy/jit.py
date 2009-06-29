@@ -84,7 +84,7 @@ def parse_python_makefile():
 
 
 
-    
+
 from pytools import Record
 class Toolchain(Record):
     """Abstract base class for tools used to link dynamic Python modules."""
@@ -96,7 +96,7 @@ class Toolchain(Record):
     def get_version(self):
         """Return a string describing the exact version of the tools (compilers etc.)
         involved in this toolchain.
-        
+
         Implemented by subclasses.
         """
 
@@ -111,7 +111,7 @@ class Toolchain(Record):
         return [self.get_version(), sys.version]
 
     def add_library(self, feature, include_dirs, library_dirs, libraries):
-        """Add *include_dirs*, *library_dirs* and *libraries* describing the 
+        """Add *include_dirs*, *library_dirs* and *libraries* describing the
         library named *feature* to the toolchain.
 
         Future toolchain invocations will include compiler flags referencing
@@ -137,7 +137,7 @@ class Toolchain(Record):
 
     def get_dependencies(self,  source_files):
         """Return a list of header files referred to by *source_files.
-        
+
         Implemented by subclasses.
         """
 
@@ -152,7 +152,7 @@ class Toolchain(Record):
 
         Implemented by subclasses.
         """
-        
+
         raise NotImplementedError
 
     def with_max_optimization(self):
@@ -189,9 +189,9 @@ class GCCToolchain(Toolchain):
 
     def _cmdline(self):
         return (
-                [self.cc] 
-                + self.cflags 
-                + self.ldflags 
+                [self.cc]
+                + self.cflags
+                + self.ldflags
                 + ["-D%s" % define for define in self.defines]
                 + ["-I%s" % idir for idir in self.include_dirs]
                 + ["-L%s" % ldir for ldir in self.library_dirs]
@@ -204,7 +204,7 @@ class GCCToolchain(Toolchain):
     def get_dependencies(self, source_files):
         from pytools.prefork import call_capture_stdout
         lines = join_continued_lines(call_capture_stdout(
-                [self.cc] 
+                [self.cc]
                 + ["-M"]
                 + ["-D%s" % define for define in self.defines]
                 + ["-I%s" % idir for idir in self.include_dirs]
@@ -245,7 +245,7 @@ class GCCToolchain(Toolchain):
 
         oflags = ["-O3"]
         if self.get_version_tuple() >= (4,3):
-            oflags.extend(["-march=native", "-mtune=native", 
+            oflags.extend(["-march=native", "-mtune=native",
                 "-ftree-vectorize", ])
 
         return self.copy(cflags=cflags + oflags)
@@ -265,7 +265,7 @@ def _erase_dir(dir):
 
 
 
-def extension_file_from_string(toolchain, ext_file, source_string, 
+def extension_file_from_string(toolchain, ext_file, source_string,
         source_name="module.cpp", debug=False):
     """Using *toolchain*, build the extension file named *ext_file*
     from the source code in *source_string*, which is saved to a
@@ -335,7 +335,7 @@ class CacheLockManager(CleanupBase):
             attempts = 0
             while True:
                 try:
-                    self.fd = os.open(self.lock_file, 
+                    self.fd = os.open(self.lock_file,
                             os.O_CREAT | os.O_WRONLY | os.O_EXCL)
                     break
                 except OSError:
@@ -348,7 +348,7 @@ class CacheLockManager(CleanupBase):
 
                 if attempts > 10:
                     from warnings import warn
-                    warn("could not obtain lock--delete '%s' if necessary" 
+                    warn("could not obtain lock--delete '%s' if necessary"
                             % self.lock_file)
 
             cleanup_m.register(self)
@@ -389,21 +389,21 @@ class ModuleCacheDirManager(CleanupBase):
         _erase_dir(self.path)
 
 
-def extension_from_string(toolchain, name, source_string, source_name="module.cpp", 
+def extension_from_string(toolchain, name, source_string, source_name="module.cpp",
         cache_dir=None, debug=False, wait_on_error=None, debug_recompile=False):
     """Return a reference to the extension module *name*, which can be built
     from the source code in *source_string* if necessary. Raise :exc:`CompileError` in
     case of error.
-    
+
     Compiled code is cached in *cache_dir* and available immediately if it has
     been compiled at some point in the past. Compiler and Python API versions
-    as well as versions of include files are taken into account when examining 
+    as well as versions of include files are taken into account when examining
     the cache. If *cache_dir* is ``None``, a default location is assumed.
     If it is ``False``, no caching is performed. Proper locking is performed
-    on the cache directory. Simultaneous use of the cache by multiple processes 
+    on the cache directory. Simultaneous use of the cache by multiple processes
     works as expected, but may lead to delays because of locking.
 
-    The code in *source_string* will be saved to a temporary file named 
+    The code in *source_string* will be saved to a temporary file named
     *source_name* if it needs to be compiled.
 
     If *debug* is ``True``, commands involved in the build are printed.
@@ -425,7 +425,7 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
     if cache_dir is None:
         from os.path import exists
         from tempfile import gettempdir
-        cache_dir = join(gettempdir(), 
+        cache_dir = join(gettempdir(),
                 "codepy-compiler-cache-v4-uid%s" % os.getuid())
 
         try:
@@ -517,7 +517,7 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
 
         valid = src_f.read() == source_string
         src_f.close()
-        
+
         if not valid:
             from warnings import warn
             warn("hash collision in compiler cache")
@@ -625,7 +625,7 @@ def guess_toolchain():
                 make_vars["LDSHARED"].split()[1:]
                 + make_vars["LINKFORSHARED"].split()
                 ),
-            libraries=[strip_prefix("-l", lib) 
+            libraries=[strip_prefix("-l", lib)
                 for lib in make_vars["LIBS"].split()],
             include_dirs=[
                 make_vars["INCLUDEPY"]
@@ -638,9 +638,9 @@ def guess_toolchain():
     from pytools.prefork import call_capture_stdout
     version = call_capture_stdout([kwargs["cc"], "--version"])
     if "Free Software Foundation" in version:
-	if "-Wstrict-prototypes" in kwargs["cflags"]:
-	    kwargs["cflags"].remove("-Wstrict-prototypes")
+        if "-Wstrict-prototypes" in kwargs["cflags"]:
+            kwargs["cflags"].remove("-Wstrict-prototypes")
 
-	return GCCToolchain(**kwargs)
+        return GCCToolchain(**kwargs)
     else:
-	raise ToolchainGuessError("unknown compiler")
+        raise ToolchainGuessError("unknown compiler")
