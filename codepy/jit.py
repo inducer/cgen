@@ -155,8 +155,15 @@ class Toolchain(Record):
 
         raise NotImplementedError
 
-    def with_max_optimization(self):
-        """Turn on maximal optimization for this toolchain instance.
+    def with_optimization_level(self, level, **extra):
+        """Return a new Toolchain object with the optimization level
+        set to `level` , on the scale defined by the gcc -O option.
+        Levels greater than four may be defined to perform certain, expensive
+        optimizations. Further, extra keyword arguments may be defined.
+        If a subclass doesn't understand an "extra" argument, it should
+        simply ignore it.
+
+        Level may also be "debug" to specifiy a debug build.
 
         Implemented by subclasses.
         """
@@ -234,19 +241,21 @@ class GCCToolchain(Toolchain):
                     " ".join(cc_cmdline)
             raise CompileError, "module compilation failed"
 
-    def with_max_optimization(self):
+    def with_optimization_level(self, level, debug=False, **extra):
         def remove_prefix(l, prefix):
-            return [f for f in l
-                    if not f.startswith(prefix) and not f.startswith("-g")]
+            return [f for f in l if not f.startswith(prefix)]
 
         cflags = self.cflags
-        for pfx in ["-O", "-g", "-march", "-mtune"]:
-            cflags = remove_prefix(self.cflags, pfx)
+        for pfx in ["-O", "-g", "-march", "-mtune", "-DNDEBUG"]:
+            cflags = remove_prefix(cflags, pfx)
 
-        oflags = ["-O3"]
-        if self.get_version_tuple() >= (4,3):
-            oflags.extend(["-march=native", "-mtune=native",
-                "-ftree-vectorize", ])
+        if level == "debug":
+            oflags = ["-g"]
+        else:
+            oflags = ["-O%d" % level, "-DNDEBUG"]
+
+            if level >= 2 and self.get_version_tuple() >= (4,3):
+                oflags.extend(["-march=native", "-mtune=native", ])
 
         return self.copy(cflags=cflags + oflags)
 
