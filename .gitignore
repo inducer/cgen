@@ -6,3 +6,4 @@ build
 *.egg-info
 MANIFEST
 dist
+setuptools*egg
