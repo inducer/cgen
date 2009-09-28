@@ -399,7 +399,7 @@ class ModuleCacheDirManager(CleanupBase):
 
 
 def extension_from_string(toolchain, name, source_string, source_name="module.cpp",
-        cache_dir=None, debug=False, wait_on_error=None, debug_recompile=False):
+        cache_dir=None, debug=False, wait_on_error=None, debug_recompile=True):
     """Return a reference to the extension module *name*, which can be built
     from the source code in *source_string* if necessary. Raise :exc:`CompileError` in
     case of error.
