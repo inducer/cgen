@@ -8,7 +8,7 @@ ez_setup.use_setuptools()
 from setuptools import setup
 
 setup(name="codepy",
-      version="0.90",
+      version="0.91",
       description="Generate and execute native code at run time.",
       long_description="""
       CodePy is a C/C++ metaprogramming toolkit for Python. It handles two aspects of
