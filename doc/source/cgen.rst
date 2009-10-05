@@ -3,6 +3,8 @@
 
 .. module:: codepy.cgen
 
+.. autofunction:: dtype_to_ctype
+
 .. autoclass:: Generable
     :members: generate, __str__
     :show-inheritance:
@@ -129,7 +131,7 @@ Statements
 .. automodule:: codepy.cgen.cuda
 
 This module adds a few Nvidia `CUDA <http://nvidia.com/cuda>`_ features to
-CodePy's repertoire. This makes CodePy a perfect complement to 
+CodePy's repertoire. This makes CodePy a perfect complement to
 `PyCuda <http://mathema.tician.de/software/pycuda>`_: CodePy generates
 the code, PyCuda compiles it, uploads it to the GPU and executes it.
 
@@ -140,10 +142,54 @@ The PyCuda manual has a tutorial on using the two together.
 
 .. autoclass:: CudaDevice
     :show-inheritance:
-    
+
 .. autoclass:: CudaShared
     :show-inheritance:
 
 .. autoclass:: CudaConstant
     :show-inheritance:
 
+:mod:`codepy.cgen.opencl` -- Extensions to generate OpenCL-compatible C Sources
+-------------------------------------------------------------------------------
+
+.. versionadded:: 0.91
+
+.. automodule:: codepy.cgen.opencl
+
+.. autofunction:: dtype_to_cltype
+
+Kernels and Kernel Arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: CLKernel
+    :show-inheritance:
+
+.. autoclass:: CLConstant
+    :show-inheritance:
+
+.. autoclass:: CLLocal
+    :show-inheritance:
+
+.. autoclass:: CLGlobal
+    :show-inheritance:
+
+.. autoclass:: CLImage
+    :show-inheritance:
+
+Function Attributes
+^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: CLVecTypeHint
+    :show-inheritance:
+
+.. autoclass:: CLWorkGroupSizeHint
+    :show-inheritance:
+
+.. autoclass:: CLRequiredWorkGroupSize
+    :show-inheritance:
+
+Vector PODs
+^^^^^^^^^^^
+
+.. autoclass:: CLVectorPOD
+    :show-inheritance:
