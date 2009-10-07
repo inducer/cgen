@@ -98,7 +98,9 @@ class CLVecTypeHint(NestedDeclarator):
             sub_decl, type_str))
 
 class _CLWorkGroupSizeDeclarator(NestedDeclarator):
-    def __init__(self, dim):
+    def __init__(self, dim, subdecl):
+        NestedDeclarator.__init__(self, subdecl)
+
         while len(dim) < 3:
             dim = dim + (1,)
 
