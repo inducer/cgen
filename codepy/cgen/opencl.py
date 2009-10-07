@@ -94,7 +94,7 @@ class CLVecTypeHint(NestedDeclarator):
 
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("%s __attribute__ ((vec_type_hint(%s)))" % (
+        return sub_tp, ("__attribute__ ((vec_type_hint(%s))) %s" % (
             sub_decl, type_str))
 
 class _CLWorkGroupSizeDeclarator(NestedDeclarator):
@@ -109,14 +109,14 @@ class _CLWorkGroupSizeDeclarator(NestedDeclarator):
 class CLWorkGroupSizeHint(_CLWorkGroupSizeDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("%s __attribute__ ((work_group_size_hint(%s)))" % (
-            sub_decl, ", ".join(str(d) for d in self.dim)))
+        return sub_tp, ("__attribute__ ((work_group_size_hint(%s))) %s" % (
+            ", ".join(str(d) for d in self.dim), sub_decl))
 
 class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("%s __attribute__ ((reqd_work_group_size(%s)))" % (
-            sub_decl, ", ".join(str(d) for d in self.dim)))
+        return sub_tp, ("__attribute__ ((reqd_work_group_size(%s))) %s" % (
+            ", ".join(str(d) for d in self.dim), sub_decl))
 
 
 
