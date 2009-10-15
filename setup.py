@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: latin1 -*-
 
-import ez_setup
-
-ez_setup.use_setuptools()
+import distribute_setup
+distribute_setup.use_setuptools()
 
 from setuptools import setup
 
@@ -46,5 +45,4 @@ setup(name="codepy",
       install_requires=[
           "pytools>=8",
           ],
-      zip_safe=False,
      )
