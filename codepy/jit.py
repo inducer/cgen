@@ -225,7 +225,7 @@ class GCCToolchain(Toolchain):
     def build_extension(self, ext_file, source_files, debug=False):
         cc_cmdline = (
                 self._cmdline()
-                + ["-o%s" % ext_file]
+                + ["-o", ext_file]
                 + source_files
                 )
 
@@ -649,7 +649,14 @@ def guess_toolchain():
     if "Free Software Foundation" in version:
         if "-Wstrict-prototypes" in kwargs["cflags"]:
             kwargs["cflags"].remove("-Wstrict-prototypes")
-
+        if "darwin" in version:
+            #Are we running in 32-bit mode?
+            #The python interpreter may have been compiled as a Fat binary
+            #So we need to check explicitly how we're running
+            #And update the cflags accordingly
+            import sys
+            if sys.maxint == 0x7fffffff:
+                kwargs["cflags"].extend(['-arch', 'i386'])
         return GCCToolchain(**kwargs)
     else:
         raise ToolchainGuessError("unknown compiler")
