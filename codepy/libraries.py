@@ -90,8 +90,8 @@ def add_boost_python(toolchain):
     aksetup = get_aksetup_config()
     toolchain.add_library(
             "boost-python",
-            aksetup["BOOST_INC_DIR"],
-            aksetup["BOOST_LIB_DIR"],
+            aksetup.get("BOOST_INC_DIR", []),
+            aksetup.get("BOOST_LIB_DIR", []),
             get_boost_libname("python", aksetup)
             )
 
@@ -102,7 +102,7 @@ def add_boost_numeric_bindings(toolchain):
     aksetup = get_aksetup_config()
     toolchain.add_library(
             "boost-numeric-bindings",
-            aksetup["BOOST_BINDINGS_INC_DIR"], [], [])
+            aksetup.get("BOOST_BINDINGS_INC_DIR", []), [], [])
 
 
 
