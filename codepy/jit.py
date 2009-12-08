@@ -194,17 +194,22 @@ class GCCToolchain(Toolchain):
 
         return tuple(result)
 
-    def _cmdline(self):
+    def _cmdline(self, object=False):
+        if object:
+            ldOption = ['-c']
+        else:
+            ldOption = self.ldflags
         return (
-                [self.cc]
-                + self.cflags
-                + self.ldflags
-                + ["-D%s" % define for define in self.defines]
-                + ["-I%s" % idir for idir in self.include_dirs]
-                + ["-L%s" % ldir for ldir in self.library_dirs]
-                + ["-l%s" % lib for lib in self.libraries]
-                )
-
+            [self.cc]
+            + self.cflags
+            + ldOption
+            + ["-D%s" % define for define in self.defines]
+            + ["-U%s" % undefine for undefine in self.undefines]
+            + ["-I%s" % idir for idir in self.include_dirs]
+            + ["-L%s" % ldir for ldir in self.library_dirs]
+            + ["-l%s" % lib for lib in self.libraries]
+            )
+    
     def abi_id(self):
         return Toolchain.abi_id(self) + [self._cmdline()]
 
@@ -222,9 +227,9 @@ class GCCToolchain(Toolchain):
         return set(flatten(
             line.split()[1:] for line in lines))
 
-    def build_extension(self, ext_file, source_files, debug=False):
+    def build_extension(self, ext_file, source_files, object=False, debug=False):
         cc_cmdline = (
-                self._cmdline()
+                self._cmdline(object)
                 + ["-o", ext_file]
                 + source_files
                 )
@@ -259,10 +264,72 @@ class GCCToolchain(Toolchain):
 
         return self.copy(cflags=cflags + oflags)
 
+class NVCCToolchain(Toolchain):
+    def get_version(self):
+        from pytools.prefork import call_capture_stdout
+        return call_capture_stdout([self.cc, "--version"])
+    def get_version_tuple(self):
+        ver = self.get_version()
+        lines = ver.split("\n")
+        words = lines[3].split()
+        numbers = words[4].split('.') + words[5].split('.')
 
+        result = []
+        for n in number:
+            try:
+                result.append(int(n))
+            except ValueError:
+                # not an integer? too bad.
+                break
 
+        return tuple(result)
+    def _cmdline(self):
+        return (
+                [self.cc]
+                + self.cflags
+                + self.ldflags
+                + ["-D%s" % define for define in self.defines]
+                + ["-U%s" % undefine for undefine in self.undefines]
+                + ["-I%s" % idir for idir in self.include_dirs]
+                + ["-L%s" % ldir for ldir in self.library_dirs]
+                + ["-l%s" % lib for lib in self.libraries]
+                )
+    def abi_id(self):
+        return Toolchain.abi_id(self) + [self._cmdline()]
+    
+    def get_dependencies(self, source_files):
+        from pytools.prefork import call_capture_stdout
+        lines = join_continued_lines(call_capture_stdout(
+                [self.cc]
+                + ["-M"]
+                + ["-D%s" % define for define in self.defines]
+                + ["-U%s" % undefine for undefine in self.defines]
+                + ["-I%s" % idir for idir in self.include_dirs]
+                + source_files
+                ).split("\n"))
+        from pytools import flatten
+        return set(flatten(
+            line.split()[2:] for line in lines))
 
+    def build_extension(self, ext_file, source_files, object=False, debug=False):
+        cc_cmdline = (
+                self._cmdline()
+                + ["-o", ext_file]
+                + source_files
+                )
+        
+        from pytools.prefork import call
+        if debug:
+            print " ".join(cc_cmdline)
 
+        result = call(cc_cmdline)
+
+        if result != 0:
+            import sys
+            print >> sys.stderr, "FAILED compiler invocation:", \
+                    " ".join(cc_cmdline)
+            raise CompileError, "module compilation failed"
+        
 # drivers ---------------------------------------------------------------------
 def _erase_dir(dir):
     from os import listdir, unlink, rmdir
@@ -425,6 +492,49 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
     If *debug_recompile*, messages are printed indicating whether a recompilation
     is taking place.
     """
+    mod_name, ext_file, recompiled = compile_from_string(toolchain, name, source_string, source_name,
+                                             cache_dir, debug, wait_on_error, debug_recompile,
+                                             toolchain.so_ext)
+     # try loading it
+    from imp import load_dynamic
+    return load_dynamic(mod_name, ext_file)
+    
+    
+def compile_from_string(toolchain, name, source_string, source_name="module.cpp",
+                        cache_dir=None, debug=False, wait_on_error=None, debug_recompile=True,
+                        object_suffix=".o", object=False):
+    """Returns a tuple: mod_name, file_name, recompiled.
+    mod_name is the name of the module represented by a compiled object,
+    file_name is the name of the compiled object, which can be built from the source
+    code in *source_string* if necessary,
+    recompiled is True if the object had to be recompiled, False if the cache is hit.
+    Raise :exc:`CompileError` in case of error.  The mod_name and file_name are designed
+    to be used with load_dynamic to load a python module from this object, if desired.
+
+    Compiled code is cached in *cache_dir* and available immediately if it has been
+    compiled at some point in the past.  Compiler and Python API versions as well as
+    versions of include files are taken into account when examining the cache.
+    If *cache_dir* is ``None``, a default location is assumed.
+    If it is ``False``, no caching is perfomed.  Proper locking is performed on the
+    cache directory.  Simultaneous use of the cache by multiple processes works as
+    expected, but may lead to delays because of locking.
+
+    The code in *source_string* will be saved to a temporary file named
+    *source_name* if it needs to be compiled.
+
+    If *debug* is ``True``, commands involved in the build are printed.
+
+    If *wait_on_error* is ``True``, the full path name of the temporary in
+    which a :exc:`CompileError` occurred is shown and the user is expected
+    to press a key before the temporary file gets deleted. If *wait_on_error*
+    is ``None``, it is taken to be the same as *debug*.
+
+    If *debug_recompile*, messages are printed indicating whether a recompilation
+    is taking place.
+
+    The object will have the suffix provided by *object_suffix*.
+    """
+    
     if wait_on_error is None:
         wait_on_error = debug
 
@@ -545,16 +655,11 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
                     join(cache_dir, hex_checksum))
             source_path = mod_cache_dir_m.sub("source")
             deps_path = mod_cache_dir_m.sub("deps")
-            ext_file = mod_cache_dir_m.sub(name+toolchain.so_ext)
+            ext_file = mod_cache_dir_m.sub(name+object_suffix)
 
             if mod_cache_dir_m.existed:
                 if check_deps(deps_path) and check_source(source_path):
-                    # try loading it
-                    try:
-                        from imp import load_dynamic
-                        return load_dynamic(mod_name, ext_file)
-                    except Exception, e:
-                        warn("dynamic loading of compiled module failed: %s" % e)
+                    return mod_name, ext_file, False
 
                 # the cache directory existed, but was invalid
                 mod_cache_dir_m.reset()
@@ -563,7 +668,7 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
                     print "recompiling for non-existent cache dir (%s)." % (
                             mod_cache_dir_m.path)
         else:
-            ext_file = join(temp_dir, source_name+toolchain.so_ext)
+            ext_file = join(temp_dir, source_name+object_suffix)
             done_path = None
             deps_path = None
             source_path = None
@@ -571,9 +676,8 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
         temp_dir_m = TempDirManager(cleanup_m)
         source_file = temp_dir_m.sub(source_name)
         write_source(source_file)
-
         try:
-            toolchain.build_extension(ext_file, [source_file], debug=debug)
+            toolchain.build_extension(ext_file, [source_file], debug=debug, object=object)
         except CompileError:
             if wait_on_error:
                 raw_input("Examine %s, then press [Enter]:" % source_file)
@@ -585,13 +689,13 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
             src_f.close()
 
         if deps_path is not None:
+            print(deps_path)
             from cPickle import dump
             deps_file = open(deps_path, "w")
             dump(get_dep_structure(), deps_file)
             deps_file.close()
 
-        from imp import load_dynamic
-        return load_dynamic(mod_name, ext_file)
+        return mod_name, ext_file, True
     except:
         cleanup_m.error_clean_up()
         raise
@@ -599,7 +703,20 @@ def extension_from_string(toolchain, name, source_string, source_name="module.cp
         cleanup_m.clean_up()
 
 
-
+def link_extension(toolchain, objects, mod_name, debug=False, wait_on_error=True):
+    #Put the linked object in the same directory as the first object
+    import os.path
+    destinationBase, objectExtension = os.path.splitext(objects[0])
+    destination = destinationBase + toolchain.so_ext
+    try:
+        toolchain.build_extension(destination, objects, debug=debug, object=False)
+    except CompileError:
+        if wait_on_error:
+            #raw_input("Examine %s, then press [Enter]:" % source_file)
+            raise
+    # try loading it
+    from imp import load_dynamic
+    return load_dynamic(mod_name, destination)
 
 # configuration ---------------------------------------------------------------
 class ToolchainGuessError(Exception):
@@ -642,6 +759,7 @@ def guess_toolchain():
             library_dirs=[make_vars["LIBDIR"]],
             so_ext=make_vars["SO"],
             defines=[],
+            undefines=[],
             )
 
     from pytools.prefork import call_capture_stdout
@@ -660,3 +778,14 @@ def guess_toolchain():
         return GCCToolchain(**kwargs)
     else:
         raise ToolchainGuessError("unknown compiler")
+
+def guess_nvcctoolchain():
+    kwargs = dict(cc='nvcc',
+                  include_dirs=[],
+                  library_dirs=[],
+                  libraries=[],
+                  cflags=['-c'],
+                  ldflags=[],
+                  defines=[],
+                  undefines=['__BLOCKS__'])
+    return NVCCToolchain(**kwargs)

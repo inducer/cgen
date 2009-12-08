@@ -152,3 +152,13 @@ def add_hedge(toolchain):
     add_pyublas(toolchain)
     add_boost_numeric_bindings(toolchain)
     add_py_module(toolchain, "hedge")
+
+
+def add_cuda(toolchain):
+    aksetup = get_aksetup_config()
+    cudaLibPath = aksetup['CUDADRV_LIB_DIR']
+    cudaLibrary = aksetup['CUDADRV_LIBNAME']
+    cudaIncludePath = aksetup['CUDA_INC_DIR']
+    cudaRtPath = aksetup['CUDART_LIB_DIR']
+    cudaRtLibrary = aksetup['CUDART_LIBNAME']
+    toolchain.add_library('cuda', cudaIncludePath, cudaLibPath + cudaRtPath, cudaLibrary + cudaRtLibrary)
