@@ -689,7 +689,6 @@ def compile_from_string(toolchain, name, source_string, source_name="module.cpp"
             src_f.close()
 
         if deps_path is not None:
-            print(deps_path)
             from cPickle import dump
             deps_file = open(deps_path, "w")
             dump(get_dep_structure(), deps_file)
