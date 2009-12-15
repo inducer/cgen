@@ -150,9 +150,14 @@ class ElementwiseKernel:
 
     def __call__(self, *args):
         vectors = []
+        args = list(args)
 
         from pytools import single_valued
-        size = single_valued(args[i].size for i in self.vec_arg_indices)
+        size = single_valued(args[i].size for i in self.vec_arg_indices
+                if not (isinstance(args[i], (int, float)) and args[i] == 0))
+        for i in self.vec_arg_indices:
+            if isinstance(args[i], (int, float)) and args[i] == 0:
+                args[i] = numpy.zeros(size, dtype=self.arguments[i].dtype)
 
         # no need to do type checking--pyublas does that for us
         arg_struct = self.module.ArgStruct()
