@@ -67,29 +67,24 @@ class CudaModule(object):
         
         hostCode = str(self.boost_module.generate()) + "\n"
         deviceCode = str(self.generate()) + "\n"
-
-        def merge(master, supplement):
-            """Update the master dictionary with keys from the supplement.
-            Keeps the master's value for keys which are duplicated in the
-            supplement.
-            """
-            for key in supplement:
-                if key not in master:
-                    master[key] = supplement[key]
         
         from codepy.jit import compile_from_string, extension_from_string
         from codepy.jit import link_extension
-        
+
+        import copy
+        local_host_kwargs = copy.copy(kwargs)
+        local_host_kwargs.update(host_kwargs)
+        local_nvcc_kwargs = copy.copy(kwargs)
+        local_nvcc_kwargs.update(nvcc_kwargs)
         # Don't compile shared objects, just normal objects
         # (on some platforms, they're different)
-        merge(host_kwargs, kwargs)
-        merge(nvcc_kwargs, kwargs)
+
         host_mod_name, host_object, host_compiled = compile_from_string(
             host_toolchain, self.boost_module.name, hostCode,
-            object=True, **host_kwargs)  
+            object=True, **local_host_kwargs)  
         device_mod_name, device_object, device_compiled = compile_from_string(
             nvcc_toolchain, 'gpu', deviceCode, 'gpu.cu',
-            object=True, **nvcc_kwargs)
+            object=True, **local_nvcc_kwargs)
 
     
         if host_compiled or device_compiled:

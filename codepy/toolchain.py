@@ -1,8 +1,7 @@
 """Toolchains for Just-in-time Python extension compilation."""
 
 from __future__ import division
-
-from compile import CompileError
+from __init__ import CompileError
 
 def join_continued_lines(lines):
     result = []

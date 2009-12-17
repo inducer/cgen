@@ -169,11 +169,11 @@ def add_hedge(toolchain):
 
 def add_cuda(toolchain):
     conf = get_aksetup_config()
-    cudaLibPath = conf['CUDADRV_LIB_DIR']
-    cudaLibrary = conf.get('CUDADRV_LIBNAME', 'cuda')
-    cudaIncludePath = conf['CUDA_INC_DIR']
-    if cudaIncludePath is None or \
-            cudaLibPath is None:
+    cuda_lib_path = conf.get('CUDADRV_LIB_DIR', None)
+    cuda_library = conf.get('CUDADRV_LIBNAME', 'cuda')
+    cuda_include_path = conf.get('CUDA_INC_DIR', None)
+    if cuda_include_path is None or \
+            cuda_lib_path is None:
         from os.path import dirname, join, normpath
 
         if conf["CUDA_ROOT"] is None:
@@ -189,8 +189,10 @@ def add_cuda(toolchain):
                 conf["CUDA_INC_DIR"] = [join(conf["CUDA_ROOT"], "include")]
             if not conf["CUDADRV_LIB_DIR"]:
                 conf["CUDADRV_LIB_DIR"] = [join(conf["CUDA_ROOT"], "lib")]
-            cudaIncludePath = conf["CUDA_INC_DIR"]
-            cudaLibPath = conf["CUDADRV_LIB_DIR"]
-    cudaRtPath = conf.get('CUDART_LIB_DIR', cudaLibPath)
-    cudaRtLibrary = conf.get('CUDART_LIBNAME', 'cudart')
-    toolchain.add_library('cuda', cudaIncludePath, cudaLibPath + cudaRtPath, cudaLibrary + cudaRtLibrary)
+            cuda_include_path = conf["CUDA_INC_DIR"]
+            cuda_lib_path = conf["CUDADRV_LIB_DIR"]
+    cuda_rt_path = conf.get('CUDART_LIB_DIR', cuda_lib_path)
+    cuda_rt_library = conf.get('CUDART_LIBNAME', 'cudart')
+    toolchain.add_library('cuda', cuda_include_path,
+                          cuda_lib_path + cuda_rt_path,
+                          cuda_library + cuda_rt_library)
