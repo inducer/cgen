@@ -11,7 +11,7 @@ def make_greet_mod(greeting):
                 Block([Statement('return "%s"' % greeting)])
                 ))
 
-    from codepy.jit import guess_toolchain
+    from codepy.toolchain import guess_toolchain
     return mod.compile(guess_toolchain(), wait_on_error=True)
 
 def test_identical_symbols():
@@ -20,3 +20,6 @@ def test_identical_symbols():
 
     assert us.greet() != aussie.greet()
     print us.greet(), aussie.greet()
+
+if __name__ == '__main__':
+    test_identical_symbols()

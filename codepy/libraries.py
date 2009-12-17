@@ -9,7 +9,21 @@ __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
 from pytools import memoize
 
+def search_on_path(filenames):
+    """Find file on system path."""
+    # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52224
 
+    from os.path import exists, join, abspath
+    from os import pathsep, environ
+
+    search_path = environ["PATH"]
+
+    file_found = 0
+    paths = search_path.split(pathsep)
+    for path in paths:
+        for filename in filenames:
+            if exists(join(path, filename)):
+                return abspath(join(path, filename))
 
 
 # aksetup handling ------------------------------------------------------------
@@ -153,12 +167,30 @@ def add_hedge(toolchain):
     add_boost_numeric_bindings(toolchain)
     add_py_module(toolchain, "hedge")
 
-
 def add_cuda(toolchain):
-    aksetup = get_aksetup_config()
-    cudaLibPath = aksetup['CUDADRV_LIB_DIR']
-    cudaLibrary = aksetup['CUDADRV_LIBNAME']
-    cudaIncludePath = aksetup['CUDA_INC_DIR']
-    cudaRtPath = aksetup['CUDART_LIB_DIR']
-    cudaRtLibrary = aksetup['CUDART_LIBNAME']
+    conf = get_aksetup_config()
+    cudaLibPath = conf['CUDADRV_LIB_DIR']
+    cudaLibrary = conf.get('CUDADRV_LIBNAME', 'cuda')
+    cudaIncludePath = conf['CUDA_INC_DIR']
+    if cudaIncludePath is None or \
+            cudaLibPath is None:
+        from os.path import dirname, join, normpath
+
+        if conf["CUDA_ROOT"] is None:
+            nvcc_path = search_on_path(["nvcc", "nvcc.exe"])
+            if nvcc_path is None:
+                print "*** CUDA_ROOT not set, and nvcc not in path. Giving up."
+                import sys
+                sys.exit(1)
+            
+            conf["CUDA_ROOT"] = normpath(join(dirname(nvcc_path), ".."))
+    
+            if conf["CUDA_INC_DIR"] is None:
+                conf["CUDA_INC_DIR"] = [join(conf["CUDA_ROOT"], "include")]
+            if not conf["CUDADRV_LIB_DIR"]:
+                conf["CUDADRV_LIB_DIR"] = [join(conf["CUDA_ROOT"], "lib")]
+            cudaIncludePath = conf["CUDA_INC_DIR"]
+            cudaLibPath = conf["CUDADRV_LIB_DIR"]
+    cudaRtPath = conf.get('CUDART_LIB_DIR', cudaLibPath)
+    cudaRtLibrary = conf.get('CUDART_LIBNAME', 'cudart')
     toolchain.add_library('cuda', cudaIncludePath, cudaLibPath + cudaRtPath, cudaLibrary + cudaRtLibrary)

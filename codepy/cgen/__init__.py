@@ -58,8 +58,8 @@ def dtype_to_ctype(dtype):
 
 class Generable(object):
     def __str__(self):
-        """Return a single string (possibly containing newlines) representing this
-        code construct."""
+        """Return a single string (possibly containing newlines) representing
+        this code construct."""
         return "\n".join(self.generate())
 
     def generate(self, with_semicolon=True):
@@ -168,16 +168,16 @@ class NestedDeclarator(Declarator):
         return self.subdecl.get_decl_pair()
 
 class DeclSpecifier(NestedDeclarator):
-    def __init__(self, subdecl, spec, space=' '):
+    def __init__(self, subdecl, spec, sep=' '):
         NestedDeclarator.__init__(self, subdecl)
         self.spec = spec
-        self.space = space
+        self.sep = sep
 
     def get_decl_pair(self):
         def add_spec(sub_it):
             it = iter(sub_it)
             try:
-                yield "%s%s%s" % (self.spec, self.space, it.next())
+                yield "%s%s%s" % (self.spec, self.sep, it.next())
             except StopIteration:
                 pass
 
@@ -190,8 +190,7 @@ class DeclSpecifier(NestedDeclarator):
 class NamespaceQualifier(DeclSpecifier):
     def __init__(self, namespace, subdecl):
         DeclSpecifier.__init__(self, subdecl, namespace, '::')
-
-    
+ 
 class Typedef(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "typedef")
@@ -347,7 +346,8 @@ class GenerableStruct(Struct):
 
         *align_bytes* is an integer that causes the structure to be
         padded to an integer multiple of itself.
-        *aligned_prime_to* is a list of integers. If the resulting structure's size
+        *aligned_prime_to* is a list of integers.
+        If the resulting structure's size
         is ``s``, then ``s//align_bytes`` will be made prime to all
         numbers in *aligned_prime_to*. (Sounds obscure? It's needed
         for avoiding bank conflicts in CUDA programming.)
