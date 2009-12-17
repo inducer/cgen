@@ -3,6 +3,11 @@ from codepy.bpl import BoostPythonModule
 from codepy.cuda import CudaModule
 from codepy.cgen.cuda import CudaGlobal
 
+# This file tests the ability to use compile and link CUDA code into the
+# Python interpreter.  Running this test requires PyCUDA
+# as well as CUDA 3.0beta (or greater)
+
+
 # The host module should include a function which is callable from Python
 hostMod = BoostPythonModule()
 
