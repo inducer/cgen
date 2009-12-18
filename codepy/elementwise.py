@@ -110,7 +110,7 @@ def get_elwise_module_descriptor(arguments, operation, name="kernel"):
 def get_elwise_module_binary(arguments, operation, name="kernel", toolchain=None,
         wait_on_error=False):
     if toolchain is None:
-        from codepy.jit import guess_toolchain
+        from codepy.toolchain import guess_toolchain
         toolchain = guess_toolchain()
 
     toolchain = toolchain.copy()
