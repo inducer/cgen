@@ -413,3 +413,11 @@ def link_extension(toolchain, objects, mod_name, cache_dir=None,
     # try loading it
     from imp import load_dynamic
     return load_dynamic(mod_name, destination)
+
+
+
+
+from pytools import MovedFunctionDeprecationWrapper
+from codepy.toolchain import guess_toolchain as _gtc
+guess_toolchain = MovedFunctionDeprecationWrapper(_gtc)
+
