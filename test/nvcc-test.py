@@ -9,7 +9,7 @@ from codepy.cgen.cuda import CudaGlobal
 
 
 # The host module should include a function which is callable from Python
-hostMod = BoostPythonModule()
+host_mod = BoostPythonModule()
 
 
 # This host function extracts a pointer and shape information from a PyCUDA
@@ -36,16 +36,16 @@ statements = [
     'return remoteResult']
 
 
-hostMod.add_function(
+host_mod.add_function(
     FunctionBody(
         FunctionDeclaration(Pointer(Value("PyObject", "adjacentDifference")),
                             [Pointer(Value("PyObject", "gpuArray"))]),
         Block([Statement(x) for x in statements])))
-hostMod.add_to_preamble([Include('boost/python/extract.hpp')])
+host_mod.add_to_preamble([Include('boost/python/extract.hpp')])
 
                                  
-cudaMod = CudaModule(hostMod)
-cudaMod.add_to_preamble([Include('cuda.h')])
+cuda_mod = CudaModule(host_mod)
+cuda_mod.add_to_preamble([Include('cuda.h')])
 
 globalIndex = 'int index = blockIdx.x * blockDim.x + threadIdx.x'
 compute_diff = 'outputPtr[index] = inputPtr[index] - inputPtr[index-1]'
@@ -74,8 +74,8 @@ diff =[
                                            Value('int', 'length')])),
     Block([Statement(x) for x in launch])]
 
-cudaMod.add_to_module(diff)
-diffInstance = FunctionBody(
+cuda_mod.add_to_module(diff)
+diff_instance = FunctionBody(
     FunctionDeclaration(Value('CUdeviceptr', 'diffInstance'),
                         [Value('CUdeviceptr', 'inputPtr'),
                          Value('int', 'length')]),
@@ -83,15 +83,15 @@ diffInstance = FunctionBody(
 # CudaModule.add_function also adds a declaration of this
 # function to the BoostPythonModule which
 # is responsible for the host function.
-cudaMod.add_function(diffInstance)
+cuda_mod.add_function(diff_instance)
 
 
 
 import codepy.jit, codepy.toolchain
-gccToolchain = codepy.toolchain.guess_toolchain()
-nvccToolchain = codepy.toolchain.guess_nvcctoolchain()
+gcc_toolchain = codepy.toolchain.guess_toolchain()
+nvcc_toolchain = codepy.toolchain.guess_nvcc_toolchain()
 
-module = cudaMod.compile(gccToolchain, nvccToolchain, debug=True)
+module = cuda_mod.compile(gcc_toolchain, nvcc_toolchain, debug=True)
 import pycuda.autoinit
 import pycuda.driver
 
@@ -112,7 +112,7 @@ b = module.adjacentDifference(a).get()
 golden = [constantValue] + [0] * (length - 1)
 difference = [(x-y)*(x-y) for x, y in zip(b, golden)]
 error = sum(difference)
-if (error == 0):
+if error == 0:
     print("Test passed!")
 else:
     print("Error should be 0, but is: %s" % error)

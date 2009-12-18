@@ -21,16 +21,16 @@ class CudaModule(object):
         self.body = []
         self.boost_module = boost_module
         self.boost_module.add_to_preamble([codepy.cgen.Include('cuda.h')])
-        
+
     def add_to_preamble(self, pa):
         self.preamble.extend(pa)
-        
+
     def add_to_module(self, body):
         """Add the :class:`codepy.cgen.Generable` instances in the iterable
         *body* to the body of the module *self*.
         """
         self.body.extend(body)
-        
+
     def add_function(self, func):
         """Add a function to be exposed to code in the BoostPythonModule.
         *func* is expected to be a :class:`codepy.cgen.FunctionBody`.
@@ -39,7 +39,7 @@ class CudaModule(object):
         """
         self.boost_module.add_to_preamble([func.fdecl])
         self.body.append(func)
-        
+
     def generate(self):
         """Generate (i.e. yield) the source code of the
         module line-by-line.
@@ -48,7 +48,7 @@ class CudaModule(object):
         body += (self.preamble + [codepy.cgen.Line()]
                 + self.body)
         return codepy.cgen.Module(body)
-  
+
     def compile(self, host_toolchain, nvcc_toolchain, host_kwargs={},
                 nvcc_kwargs={}, **kwargs):
         """Return the extension module generated from the code described
@@ -61,39 +61,37 @@ class CudaModule(object):
         host_toolchain = host_toolchain.copy()
         add_boost_python(host_toolchain)
         add_cuda(host_toolchain)
-        
+
         nvcc_toolchain = nvcc_toolchain.copy()
         add_cuda(nvcc_toolchain)
-        
-        hostCode = str(self.boost_module.generate()) + "\n"
-        deviceCode = str(self.generate()) + "\n"
-        
+
+        host_code = str(self.boost_module.generate()) + "\n"
+        device_code = str(self.generate()) + "\n"
+
         from codepy.jit import compile_from_string, extension_from_string
         from codepy.jit import link_extension
 
-        import copy
-        local_host_kwargs = copy.copy(kwargs)
+        local_host_kwargs = kwargs.copy()
         local_host_kwargs.update(host_kwargs)
-        local_nvcc_kwargs = copy.copy(kwargs)
+        local_nvcc_kwargs = kwargs.copy()
         local_nvcc_kwargs.update(nvcc_kwargs)
+
         # Don't compile shared objects, just normal objects
         # (on some platforms, they're different)
-
         host_mod_name, host_object, host_compiled = compile_from_string(
-            host_toolchain, self.boost_module.name, hostCode,
-            object=True, **local_host_kwargs)  
+            host_toolchain, self.boost_module.name, host_code,
+            object=True, **local_host_kwargs)
         device_mod_name, device_object, device_compiled = compile_from_string(
-            nvcc_toolchain, 'gpu', deviceCode, 'gpu.cu',
+            nvcc_toolchain, 'gpu', device_code, 'gpu.cu',
             object=True, **local_nvcc_kwargs)
 
-    
         if host_compiled or device_compiled:
             return link_extension(host_toolchain,
                                   [host_object, device_object],
                                   host_mod_name, **kwargs)
         else:
             import os.path
-            
+
             destination_base, first_object = os.path.split(host_object)
             module_path = os.path.join(destination_base, host_mod_name
                                        + host_toolchain.so_ext)

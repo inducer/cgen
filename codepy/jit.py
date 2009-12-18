@@ -1,7 +1,7 @@
 """Just-in-time Python extension compilation."""
 
 from __future__ import division
-from __init__ import CompileError
+from codepy import CompileError
 
 __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
@@ -299,13 +299,13 @@ def compile_from_string(toolchain, name, source_string,
                 possibly_updated = os.stat(name).st_mtime != date
             except OSError, e:
                 if debug_recompile:
-                    print("recompiling because dependency %s is " +
+                    print("recompiling because dependency %s is "
                     "inaccessible (%s)." % (name, e))
                 return False
             else:
                 if possibly_updated and md5sum != get_file_md5sum(name):
                     if debug_recompile:
-                        print("recompiling because dependency %s was " +
+                        print("recompiling because dependency %s was "
                         "updated." % name)
                     return False
 
