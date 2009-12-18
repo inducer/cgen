@@ -58,14 +58,15 @@ def dtype_to_ctype(dtype):
 
 class Generable(object):
     def __str__(self):
-        """Return a single string (possibly containing newlines) representing this
-        code construct."""
+        """Return a single string (possibly containing newlines) representing
+        this code construct."""
         return "\n".join(self.generate())
 
     def generate(self, with_semicolon=True):
         """Generate (i.e. yield) the lines making up this code construct."""
 
         raise NotImplementedError
+
 
 class Declarator(Generable):
     def generate(self, with_semicolon=True):
@@ -167,15 +168,16 @@ class NestedDeclarator(Declarator):
         return self.subdecl.get_decl_pair()
 
 class DeclSpecifier(NestedDeclarator):
-    def __init__(self, subdecl, spec):
+    def __init__(self, subdecl, spec, sep=' '):
         NestedDeclarator.__init__(self, subdecl)
         self.spec = spec
+        self.sep = sep
 
     def get_decl_pair(self):
         def add_spec(sub_it):
             it = iter(sub_it)
             try:
-                yield "%s %s" % (self.spec, it.next())
+                yield "%s%s%s" % (self.spec, self.sep, it.next())
             except StopIteration:
                 pass
 
@@ -185,6 +187,10 @@ class DeclSpecifier(NestedDeclarator):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return add_spec(sub_tp), sub_decl
 
+class NamespaceQualifier(DeclSpecifier):
+    def __init__(self, namespace, subdecl):
+        DeclSpecifier.__init__(self, subdecl, namespace, '::')
+ 
 class Typedef(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "typedef")
@@ -197,6 +203,16 @@ class Const(NestedDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("const %s" % sub_decl)
+    
+class TemplateSpecializer(NestedDeclarator):
+    def __init__(self, specializer, subdecl):
+        self.specializer = specializer
+        NestedDeclarator.__init__(self, subdecl)
+    def get_decl_pair(self):
+        sub_tp, sub_decl = self.subdecl.get_decl_pair()
+        sub_tp[-1] = sub_tp[-1] + '<%s>' % self.specializer
+        return sub_tp, sub_decl
+
 
 class MaybeUnused(NestedDeclarator):
     def get_decl_pair(self):
@@ -330,7 +346,8 @@ class GenerableStruct(Struct):
 
         *align_bytes* is an integer that causes the structure to be
         padded to an integer multiple of itself.
-        *aligned_prime_to* is a list of integers. If the resulting structure's size
+        *aligned_prime_to* is a list of integers.
+        If the resulting structure's size
         is ``s``, then ``s//align_bytes`` will be made prime to all
         numbers in *aligned_prime_to*. (Sounds obscure? It's needed
         for avoiding bank conflicts in CUDA programming.)
@@ -700,7 +717,7 @@ def _test():
         ArrayOf(POD(numpy.float32, "normal"), 17),
         POD(numpy.uint16, "a_base"),
         POD(numpy.uint16, "b_base"),
-        CudaGlobal(POD(numpy.uint8, "a_ilist_number")),
+        #CudaGlobal(POD(numpy.uint8, "a_ilist_number")),
         POD(numpy.uint8, "b_ilist_number"),
         POD(numpy.uint8, "bdry_flux_number"), # 0 if not on boundary
         POD(numpy.uint8, "reserved"),
@@ -716,17 +733,23 @@ def _test():
             If("a > b",
                 Assign("a", "b"),
                 Block([
-                    Assign("a", "b-1", "+="),
-                    Break(),
+                    Assign("a", "b-1"),
+                    #Break(),
                     ])
                 ),
             ),
-        BlankLine(),
+        #BlankLine(),
         Comment("all done"),
         ]))
+    t_decl = Template('typename T',
+                      FunctionDeclaration(Value('CUdeviceptr', 'scan'),
+                                          [Value('CUdeviceptr', 'inputPtr'),
+                                           Value('int', 'length')]))
+
+                                    
     print s
     print f_body
-
+    print t_decl
 
 
 

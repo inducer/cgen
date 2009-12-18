@@ -9,7 +9,21 @@ __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
 from pytools import memoize
 
+def search_on_path(filenames):
+    """Find file on system path."""
+    # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52224
 
+    from os.path import exists, join, abspath
+    from os import pathsep, environ
+
+    search_path = environ["PATH"]
+
+    file_found = 0
+    paths = search_path.split(pathsep)
+    for path in paths:
+        for filename in filenames:
+            if exists(join(path, filename)):
+                return abspath(join(path, filename))
 
 
 # aksetup handling ------------------------------------------------------------
@@ -152,3 +166,33 @@ def add_hedge(toolchain):
     add_pyublas(toolchain)
     add_boost_numeric_bindings(toolchain)
     add_py_module(toolchain, "hedge")
+
+def add_cuda(toolchain):
+    conf = get_aksetup_config()
+    cuda_lib_path = conf.get('CUDADRV_LIB_DIR', None)
+    cuda_library = conf.get('CUDADRV_LIBNAME', 'cuda')
+    cuda_include_path = conf.get('CUDA_INC_DIR', None)
+    if cuda_include_path is None or \
+            cuda_lib_path is None:
+        from os.path import dirname, join, normpath
+
+        if conf["CUDA_ROOT"] is None:
+            nvcc_path = search_on_path(["nvcc", "nvcc.exe"])
+            if nvcc_path is None:
+                print "*** CUDA_ROOT not set, and nvcc not in path. Giving up."
+                import sys
+                sys.exit(1)
+            
+            conf["CUDA_ROOT"] = normpath(join(dirname(nvcc_path), ".."))
+    
+            if conf["CUDA_INC_DIR"] is None:
+                conf["CUDA_INC_DIR"] = [join(conf["CUDA_ROOT"], "include")]
+            if not conf["CUDADRV_LIB_DIR"]:
+                conf["CUDADRV_LIB_DIR"] = [join(conf["CUDA_ROOT"], "lib")]
+            cuda_include_path = conf["CUDA_INC_DIR"]
+            cuda_lib_path = conf["CUDADRV_LIB_DIR"]
+    cuda_rt_path = conf.get('CUDART_LIB_DIR', cuda_lib_path)
+    cuda_rt_library = conf.get('CUDART_LIBNAME', 'cudart')
+    toolchain.add_library('cuda', cuda_include_path,
+                          cuda_lib_path + cuda_rt_path,
+                          cuda_library + cuda_rt_library)
