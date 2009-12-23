@@ -2,6 +2,7 @@
 
 from __future__ import division
 from codepy import CompileError
+from pytools import Record
 
 __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
@@ -182,6 +183,19 @@ def extension_from_string(toolchain, name, source_string,
     return load_dynamic(mod_name, ext_file)
 
 
+
+
+class _InvalidInfoFile(RuntimeError):
+    pass
+
+
+
+class _SourceInfo(Record):
+    pass
+
+
+
+
 def compile_from_string(toolchain, name, source_string,
                         source_name="module.cpp", cache_dir=None,
                         debug=False, wait_on_error=None, debug_recompile=True,
@@ -220,8 +234,10 @@ def compile_from_string(toolchain, name, source_string,
 
     """
 
-    if wait_on_error is None:
-        wait_on_error = debug
+    if wait_on_error is not None:
+        from warnings import warn
+        warn("wait_on_error is deprecated and has no effect",
+                DeprecationWarning)
 
     import os
     from os.path import join
@@ -230,7 +246,7 @@ def compile_from_string(toolchain, name, source_string,
         from os.path import exists
         from tempfile import gettempdir
         cache_dir = join(gettempdir(),
-                "codepy-compiler-cache-v4-uid%s" % os.getuid())
+                "codepy-compiler-cache-v5-uid%s" % os.getuid())
 
         try:
             os.mkdir(cache_dir)
@@ -253,14 +269,13 @@ def compile_from_string(toolchain, name, source_string,
         inf.close()
         return checksum.hexdigest()
 
-    def get_dep_structure():
-        deps = list(toolchain.get_dependencies([source_file]))
+    def get_dep_structure(source_path):
+        deps = list(toolchain.get_dependencies([source_path]))
         deps.sort()
         return [(dep, os.stat(dep).st_mtime, get_file_md5sum(dep)) for dep in deps
-                if not dep == source_file]
+                if not dep == source_path]
 
     def write_source(name):
-        from os.path import join
         outf = open(name, "w")
         outf.write(str(source_string))
         outf.close()
@@ -278,23 +293,24 @@ def compile_from_string(toolchain, name, source_string,
         checksum.update(str(toolchain.abi_id()))
         return checksum.hexdigest()
 
-    def check_deps(dep_path):
+    def load_info(info_path):
         from cPickle import load
 
         try:
-            dep_file = open(dep_path)
+            info_file = open(info_path)
         except IOError:
-            return False
+            raise _InvalidInfoFile()
 
         try:
-            dep_struc = load(dep_file)
+            return load(info_file)
         except EOFError:
-            # invalid file
-            return False
+            raise _InvalidInfoFile()
+        finally:
+            info_file.close()
 
-        dep_file.close()
 
-        for name, date, md5sum in dep_struc:
+    def check_deps(deps):
+        for name, date, md5sum in deps:
             try:
                 possibly_updated = os.stat(name).st_mtime != date
             except OSError, e:
@@ -317,7 +333,7 @@ def compile_from_string(toolchain, name, source_string,
         except IOError:
             if debug_recompile:
                 print ("recompiling because cache directory does "
-                        "not contain 'source' entry.")
+                        "not contain source file '%s'." % source_path)
             return False
 
         valid = src_f.read() == source_string
@@ -342,49 +358,50 @@ def compile_from_string(toolchain, name, source_string,
         if cache_dir:
             mod_cache_dir_m = ModuleCacheDirManager(cleanup_m,
                     join(cache_dir, hex_checksum))
-            source_path = mod_cache_dir_m.sub("source")
-            deps_path = mod_cache_dir_m.sub("deps")
+            info_path = mod_cache_dir_m.sub("info")
             ext_file = mod_cache_dir_m.sub(name+suffix)
 
             if mod_cache_dir_m.existed:
-                if check_deps(deps_path) and check_source(source_path):
-                    return mod_name, ext_file, False
+                try:
+                    info = load_info(info_path)
+                except _InvalidInfoFile:
+                    mod_cache_dir_m.reset()
 
-                # the cache directory existed, but was invalid
-                mod_cache_dir_m.reset()
+                    if debug_recompile:
+                        print "recompiling for invalid cache dir (%s)." % (
+                                mod_cache_dir_m.path)
+                else:
+                    if check_deps(info.dependencies) and check_source(
+                            mod_cache_dir_m.sub(info.source_name)):
+                        return mod_name, ext_file, False
             else:
                 if debug_recompile:
                     print "recompiling for non-existent cache dir (%s)." % (
                             mod_cache_dir_m.path)
+
+            source_path = mod_cache_dir_m.sub(source_name)
         else:
             ext_file = join(temp_dir, source_name+suffix)
             done_path = None
-            deps_path = None
-            source_path = None
+            info_path = None
 
-        temp_dir_m = TempDirManager(cleanup_m)
-        source_file = temp_dir_m.sub(source_name)
-        write_source(source_file)
-        try:
-            if (object):
-                toolchain.build_object(ext_file, [source_file], debug=debug)
-            else:
-                toolchain.build_extension(ext_file, [source_file], debug=debug)
-        except CompileError:
-            if wait_on_error:
-                raw_input("Examine %s, then press [Enter]:" % source_file)
-            raise
+            temp_dir_m = TempDirManager(cleanup_m)
+            source_path = temp_dir_m.sub(source_name)
 
-        if source_path is not None:
-            src_f = open(source_path, "w")
-            src_f.write(source_string)
-            src_f.close()
+        write_source(source_path)
 
-        if deps_path is not None:
+        if object:
+            toolchain.build_object(ext_file, [source_path], debug=debug)
+        else:
+            toolchain.build_extension(ext_file, [source_path], debug=debug)
+
+        if info_path is not None:
             from cPickle import dump
-            deps_file = open(deps_path, "w")
-            dump(get_dep_structure(), deps_file)
-            deps_file.close()
+            info_file = open(info_path, "w")
+            dump(_SourceInfo(
+                dependencies=get_dep_structure(source_path),
+                source_name=source_name), info_file)
+            info_file.close()
 
         return mod_name, ext_file, True
     except:
@@ -394,13 +411,15 @@ def compile_from_string(toolchain, name, source_string,
         cleanup_m.clean_up()
 
 
+
+
 def link_extension(toolchain, objects, mod_name, cache_dir=None,
-                   debug=False, wait_on_error=True):
+        debug=False, wait_on_error=True):
     import os.path
     if cache_dir is not None:
         destination = os.path.join(cache_dir, mod_name + toolchain.so_ext)
     else:
-        #Put the linked object in the same directory as the first object
+        # put the linked object in the same directory as the first object
         destination_base, first_object = os.path.split(objects[0])
         destination = os.path.join(destination_base, mod_name
                                    + toolchain.so_ext)
@@ -410,6 +429,7 @@ def link_extension(toolchain, objects, mod_name, cache_dir=None,
         if wait_on_error:
             raw_input("Link error, examine %s, then press [Enter]" % objects)
             raise
+
     # try loading it
     from imp import load_dynamic
     return load_dynamic(mod_name, destination)

@@ -129,6 +129,9 @@ class GCCLikeToolchain(Toolchain):
             raise RuntimeError("version query failed: "+stderrr)
         return stdout
 
+    def enable_debugging(self):
+        self.cflags = [f for f in self.cflags if not f.startswith("-O")] + ["-g"]
+
     def get_dependencies(self, source_files):
         from codepy.tools import join_continued_lines
 
