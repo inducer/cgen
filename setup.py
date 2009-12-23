@@ -45,4 +45,5 @@ setup(name="codepy",
       install_requires=[
           "pytools>=8",
           ],
+      data_files=[("include/codepy", glob.glob("include/codepy/*.hpp"))],
      )

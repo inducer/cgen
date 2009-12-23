@@ -5,3 +5,4 @@ include doc/source/conf.py
 
 include distribute_setup.py
 include Makefile.in
+include include/codepy/*.hpp

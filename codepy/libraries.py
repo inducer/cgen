@@ -154,6 +154,12 @@ def add_py_module(toolchain, name):
 
 
 
+def add_codepy(toolchain):
+    add_py_module(toolchain, "codepy")
+
+
+
+
 def add_pyublas(toolchain):
     add_boost_python(toolchain)
     add_numpy(toolchain)

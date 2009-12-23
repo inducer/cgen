@@ -11,6 +11,8 @@ class BoostPythonModule(object):
         self.mod_body = []
         self.init_body = []
 
+        self.has_codepy_include = False
+
         self.max_arity = max_arity
         self.use_private_namespace = use_private_namespace
 
@@ -30,6 +32,34 @@ class BoostPythonModule(object):
 
         self.mod_body.extend(body)
 
+    def add_codepy_include(self):
+        if self.has_codepy_include:
+            return
+
+        from codepy.cgen import Include
+
+        self.add_to_preamble([
+            Include("codepy/bpl.hpp")
+            ])
+        self.has_codepy_include = True
+
+    def expose_vector_type(self, name, py_name=None):
+        self.add_codepy_include()
+
+        if py_name is None:
+            py_name = name
+
+        from codepy.cgen import (Block, Typedef, Line, Statement, Value)
+
+        self.init_body.append(
+            Block([
+                Typedef(Value(name, "cl")),
+                Line(),
+                Statement(
+                    "boost::python::class_<cl>(\"%s\")"
+                    ".def(codepy::no_compare_indexing_suite<cl>())" % py_name),
+                ]))
+
     def add_function(self, func):
         """Add a function to be exposed. *func* is expected to be a
         :class:`codepy.cgen.FunctionBody`.
@@ -42,7 +72,8 @@ class BoostPythonModule(object):
                     "boost::python::def(\"%s\", &%s)" % (
                         func.fdecl.name, func.fdecl.name)))
 
-    def add_struct(self, struct, py_name=None, py_member_name_transform=lambda x: x):
+    def add_struct(self, struct, py_name=None, py_member_name_transform=lambda x: x,
+            by_value_members=set()):
         from codepy.cgen import Block, Line, Statement, Typedef, Value
 
         if py_name is None:
@@ -54,7 +85,7 @@ class BoostPythonModule(object):
         for f in struct.fields:
             py_f_name = py_member_name_transform(f.name)
             tp_lines, declarator = f.get_decl_pair()
-            if tp_lines[0].startswith("numpy_"):
+            if f.name in by_value_members or tp_lines[0].startswith("numpy_"):
                 member_defs.append(".def(pyublas::by_value_rw_member(\"%s\", &cl::%s))"
                         % (py_f_name, f.name))
             else:
