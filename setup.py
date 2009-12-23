@@ -5,6 +5,7 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 from setuptools import setup
+import glob
 
 setup(name="codepy",
       version="0.91",
