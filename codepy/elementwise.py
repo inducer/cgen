@@ -107,8 +107,7 @@ def get_elwise_module_descriptor(arguments, operation, name="kernel"):
 
 
 
-def get_elwise_module_binary(arguments, operation, name="kernel", toolchain=None,
-        wait_on_error=False):
+def get_elwise_module_binary(arguments, operation, name="kernel", toolchain=None):
     if toolchain is None:
         from codepy.toolchain import guess_toolchain
         toolchain = guess_toolchain()
@@ -120,25 +119,23 @@ def get_elwise_module_binary(arguments, operation, name="kernel", toolchain=None
     add_pyublas(toolchain)
 
     return get_elwise_module_descriptor(arguments, operation, name) \
-            .compile(toolchain, wait_on_error=wait_on_error)
+            .compile(toolchain)
 
 
 
 
-def get_elwise_kernel(arguments, operation, name="kernel", toolchain=None,
-        wait_on_error=False):
+def get_elwise_kernel(arguments, operation, name="kernel", toolchain=None):
     return getattr(get_elwise_module_binary(
-        arguments, operation, name, toolchain, wait_on_error), name)
+        arguments, operation, name, toolchain), name)
 
 
 
 
 class ElementwiseKernel:
-    def __init__(self, arguments, operation, name="kernel", toolchain=None,
-            wait_on_error=False):
+    def __init__(self, arguments, operation, name="kernel", toolchain=None):
         self.arguments = arguments
         self.module = get_elwise_module_binary(
-                arguments, operation, name, toolchain, wait_on_error)
+                arguments, operation, name, toolchain)
         self.func = getattr(self.module, name)
 
         self.vec_arg_indices = [i for i, arg in enumerate(arguments)
