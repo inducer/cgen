@@ -677,6 +677,35 @@ class Block(Generable):
         self.contents.extend(data)
         self.contents.append(Line())
 
+class LiteralBlock(Generable):
+    def __init__(self, text):
+        if not text.startswith("\n"):
+            raise ValueError("expected newline as first character "
+                    "in literal block")
+
+        lines = text.split("\n")
+        while lines[0].strip() == "":
+            lines.pop(0)
+        while lines[-1].strip() == "":
+            lines.pop(-1)
+
+        if lines:
+            base_indent = 0
+            while lines[0][base_indent] in " \t":
+                base_indent += 1
+
+            for line in lines[1:]:
+                if line[:base_indent].strip():
+                    raise ValueError("inconsistent indentation")
+
+        self.lines = lines
+
+    def generate(self):
+        yield "{"
+        for line in self.lines:
+            yield "  " + line
+        yield "}"
+
 class Module(Block):
     def generate(self):
         for c in self.contents:
