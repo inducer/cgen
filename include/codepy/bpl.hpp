@@ -15,6 +15,12 @@
   throw boost::python::error_already_set(); \
 }
 
+#define CODEPY_PYTHON_FOREACH(TYPE, NAME, ITERABLE) \
+  BOOST_FOREACH(TYPE NAME, \
+      std::make_pair( \
+        boost::python::stl_input_iterator<TYPE>(ITERABLE), \
+        boost::python::stl_input_iterator<TYPE>()))
+
 
 
 
