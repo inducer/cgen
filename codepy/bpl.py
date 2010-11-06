@@ -12,7 +12,7 @@ class BoostPythonModule(object):
         self.init_body = []
 
         self.has_codepy_include = False
-
+        self.has_raw_function_include = False
         self.max_arity = max_arity
         self.use_private_namespace = use_private_namespace
 
@@ -43,6 +43,17 @@ class BoostPythonModule(object):
             ])
         self.has_codepy_include = True
 
+    def add_raw_function_include(self):
+        if self.has_raw_function_include:
+            return
+
+        from codepy.cgen import Include
+
+        self.add_to_preamble([
+            Include("boost/python/raw_function.hpp")
+            ])
+        self.has_raw_function_include = True                        
+
     def expose_vector_type(self, name, py_name=None):
         self.add_codepy_include()
 
@@ -72,6 +83,19 @@ class BoostPythonModule(object):
                     "boost::python::def(\"%s\", &%s)" % (
                         func.fdecl.name, func.fdecl.name)))
 
+    def add_raw_function(self, func):
+        """Add a function to be exposed using boost::python::raw_function.
+        *func* is expected to be a :class:`codepy.cgen.FunctionBody`.
+        """
+        self.mod_body.append(func)
+        from codepy.cgen import Statement
+        self.add_raw_function_include()
+        raw_function = "boost::python::raw_function(&%s)" % func.fdecl.name
+        self.init_body.append(
+            Statement(
+                "boost::python::def(\"%s\", %s)" % (
+                    func.fdecl.name, raw_function)))
+        
     def add_struct(self, struct, py_name=None, py_member_name_transform=lambda x: x,
             by_value_members=set()):
         from codepy.cgen import Block, Line, Statement, Typedef, Value
