@@ -155,9 +155,8 @@ class GCCLikeToolchain(Toolchain):
 
     def build_object(self, ext_file, source_files, debug=False):
         cc_cmdline = (
-                self._cmdline(True)
+                self._cmdline(source_files, True)
                 + ["-o", ext_file]
-                + source_files
                 )
 
         from pytools.prefork import call
@@ -174,9 +173,8 @@ class GCCLikeToolchain(Toolchain):
 
     def build_extension(self, ext_file, source_files, debug=False):
         cc_cmdline = (
-                self._cmdline(False)
+                self._cmdline(source_files, False)
                 + ["-o", ext_file]
-                + source_files
                 )
 
         from pytools.prefork import call
@@ -193,9 +191,8 @@ class GCCLikeToolchain(Toolchain):
 
     def link_extension(self, ext_file, object_files, debug=False):
         cc_cmdline = (
-                self._cmdline(False)
+                self._cmdline(object_files, False)
                 + ["-o", ext_file]
-                + object_files
                 )
 
         from pytools.prefork import call
@@ -230,7 +227,7 @@ class GCCToolchain(GCCLikeToolchain):
 
         return tuple(result)
 
-    def _cmdline(self, object=False):
+    def _cmdline(self, files, object=False):
         if object:
             ld_options = ['-c']
             link = []
@@ -245,11 +242,12 @@ class GCCToolchain(GCCLikeToolchain):
             + ["-D%s" % define for define in self.defines]
             + ["-U%s" % undefine for undefine in self.undefines]
             + ["-I%s" % idir for idir in self.include_dirs]
+            + files
             + link
             )
 
     def abi_id(self):
-        return Toolchain.abi_id(self) + [self._cmdline()]
+        return Toolchain.abi_id(self) + [self._cmdline([])]
 
     def with_optimization_level(self, level, debug=False, **extra):
         def remove_prefix(l, prefix):
@@ -289,7 +287,7 @@ class NVCCToolchain(GCCLikeToolchain):
 
         return tuple(result)
 
-    def _cmdline(self, object=False):
+    def _cmdline(self, files, object=False):
         if object:
             ldflags = ['-c']
             load = []
@@ -304,17 +302,17 @@ class NVCCToolchain(GCCLikeToolchain):
                 + ["-D%s" % define for define in self.defines]
                 + ["-U%s" % undefine for undefine in self.undefines]
                 + ["-I%s" % idir for idir in self.include_dirs]
+                + files
                 + load
                 )
 
     def abi_id(self):
-        return Toolchain.abi_id(self) + [self._cmdline()]
+        return Toolchain.abi_id(self) + [self._cmdline([])]
 
     def build_object(self, ext_file, source_files, debug=False):
         cc_cmdline = (
-                self._cmdline(True)
+                self._cmdline(source_files, True)
                 + ["-o", ext_file]
-                + source_files
                 )
 
         from pytools.prefork import call_capture_output
