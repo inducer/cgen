@@ -8,7 +8,7 @@ from setuptools import setup
 import glob
 
 setup(name="codepy",
-      version="0.91",
+      version="2011.1",
       description="Generate and execute native code at run time.",
       long_description="""
       CodePy is a C/C++ metaprogramming toolkit for Python. It handles two aspects of
