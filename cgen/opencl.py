@@ -3,7 +3,7 @@ from __future__ import division
 
 
 
-from codepy.cgen import \
+from cgen import \
         Declarator, \
         DeclSpecifier, \
         NestedDeclarator, \

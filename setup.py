@@ -25,11 +25,10 @@ setup(name="cgen",
         ],
 
       author=u"Andreas Kloeckner",
-      url="http://mathema.tician.de/software/codepy",
       author_email="inform@tiker.net",
       license = "MIT",
 
-      packages=["codepy", "codepy.cgen"],
+      packages=["cgen"],
       install_requires=[
           "pytools>=8",
           ],

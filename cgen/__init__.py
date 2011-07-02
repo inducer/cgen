@@ -320,7 +320,7 @@ class Struct(Declarator):
                 for f_line in f.generate():
                     yield "  " + f_line
             if self.pad_bytes:
-                yield "  unsigned char _codepy_pad[%d];" % self.pad_bytes
+                yield "  unsigned char _cgen_pad[%d];" % self.pad_bytes
             yield "} " + self.struct_attributes()
         return get_tp(), self.declname
 

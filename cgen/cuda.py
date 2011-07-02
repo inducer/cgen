@@ -3,7 +3,7 @@ from __future__ import division
 
 
 
-from codepy.cgen import DeclSpecifier
+from cgen import DeclSpecifier
 
 
 
