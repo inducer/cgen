@@ -237,6 +237,11 @@ class Pointer(NestedDeclarator):
         from struct import calcsize
         return calcsize(self.struct_format())
 
+class RestrictPointer(Pointer):
+    def get_decl_pair(self):
+        sub_tp, sub_decl = self.subdecl.get_decl_pair()
+        return sub_tp, ("*restrict %s" % sub_decl)
+
 
 class Reference(Pointer):
     def get_decl_pair(self):
