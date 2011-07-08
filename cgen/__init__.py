@@ -608,6 +608,13 @@ class Comment(Generable):
     def generate(self):
         yield "/* %s */" % self.text
 
+def add_comment(comment, stmt):
+    if isinstance(stmt, Block):
+        result = Block([Comment(comment), Line()])
+        result.extend(stmt.contents)
+        return result
+    else:
+        return Block([Comment(comment), Line(), stmt])
 
 
 # initializers ----------------------------------------------------------------
@@ -682,11 +689,17 @@ class Block(Generable):
         self.contents.extend(data)
         self.contents.append(Line())
 
-class LiteralBlock(Generable):
+def block_if_necessary(contents):
+    if len(contents) == 1:
+        return contents[0]
+    else:
+        return Block(contents)
+
+class LiteralLines(Generable):
     def __init__(self, text):
         if not text.startswith("\n"):
             raise ValueError("expected newline as first character "
-                    "in literal block")
+                    "in literal lines")
 
         lines = text.split("\n")
         while lines[0].strip() == "":
@@ -703,8 +716,13 @@ class LiteralBlock(Generable):
                 if line[:base_indent].strip():
                     raise ValueError("inconsistent indentation")
 
-        self.lines = lines
+        self.lines = [line[base_indent:] for line in lines]
 
+    def generate(self):
+        for line in self.lines:
+            yield line
+
+class LiteralBlock(LiteralLines):
     def generate(self):
         yield "{"
         for line in self.lines:
