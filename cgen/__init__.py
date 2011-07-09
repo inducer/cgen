@@ -4,6 +4,11 @@ from __future__ import division
 
 __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
+try:
+    import pycuda._pvt_struct as _struct
+except ImportError:
+    import struct as _struct
+
 
 
 import numpy
@@ -15,8 +20,7 @@ from pytools import memoize_method, memoize
 
 @memoize
 def is_64_bit_platform():
-    from struct import calcsize
-    return calcsize('l') == 8
+    return _struct.calcsize('l') == 8
 
 
 
@@ -119,8 +123,7 @@ class POD(Declarator):
         return self.dtype.char
 
     def alignment_requirement(self):
-        from struct import calcsize
-        return calcsize(self.struct_format())
+        return _struct.calcsize(self.struct_format())
 
     def default_value(self):
         return 0
@@ -234,8 +237,7 @@ class Pointer(NestedDeclarator):
         return "P"
 
     def alignment_requirement(self):
-        from struct import calcsize
-        return calcsize(self.struct_format())
+        return _struct.calcsize(self.struct_format())
 
 class RestrictPointer(Pointer):
     def get_decl_pair(self):
@@ -359,8 +361,7 @@ class GenerableStruct(Struct):
         """
 
         format = "".join(f.struct_format() for f in fields)
-        from struct import calcsize
-        bytes = calcsize(format)
+        bytes = _struct.calcsize(format)
 
         natural_align_bytes = max(f.alignment_requirement() for f in fields)
         if align_bytes is None:
@@ -392,7 +393,7 @@ class GenerableStruct(Struct):
             self.format = format
             self.bytes = bytes
 
-        assert calcsize(self.format) == self.bytes
+        assert _struct.calcsize(self.format) == self.bytes
 
     # until nvcc bug is fixed
     #def struct_attributes(self):
@@ -406,8 +407,7 @@ class GenerableStruct(Struct):
         :class:`str` instance with members set to the values specified
         in *kwargs*.
         """
-        from struct import pack
-        return self._maker()(pack, **kwargs)
+        return self._maker()(_struct.pack, **kwargs)
 
     def make_with_defaults(self, **kwargs):
         """Build a binary, packed representation of *self* in a
@@ -416,8 +416,7 @@ class GenerableStruct(Struct):
 
         Unlike :meth:`make`, not all members have to occur in *kwargs*.
         """
-        from struct import pack
-        return self._maker(with_defaults=True)(pack, **kwargs)
+        return self._maker(with_defaults=True)(_struct.pack, **kwargs)
 
     @memoize_method
     def _maker(self, with_defaults=False):
