@@ -465,7 +465,14 @@ class If(Generable):
         self.else_ = else_
 
     def generate(self):
-        yield "if (%s)" % self.condition
+        condition_lines = self.condition.split("\n")
+        if len(condition_lines) > 1:
+            yield "if ("
+            for l in condition_lines:
+                yield "    "+l
+            yield "  )"
+        else:
+            yield "if (%s)" % self.condition
 
         if isinstance(self.then_, Block):
             for line in self.then_.generate():
