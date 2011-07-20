@@ -461,6 +461,11 @@ class Template(NestedDeclarator):
 class If(Generable):
     def __init__(self, condition, then_, else_=None):
         self.condition = condition
+
+        assert isinstance(then_, Generable)
+        if else_ is not None:
+            assert isinstance(else_, Generable)
+
         self.then_ = then_
         self.else_ = else_
 
@@ -525,6 +530,7 @@ class CustomLoop(Loop):
 class While(Loop):
     def __init__(self, condition, body):
         self.condition = condition
+        assert isinstance(body, Generable)
         self.body = body
 
     def intro_line(self):
@@ -535,6 +541,8 @@ class For(Loop):
         self.start = start
         self.condition = condition
         self.update = update
+
+        assert isinstance(body, Generable)
         self.body = body
 
     def intro_line(self):
@@ -543,6 +551,7 @@ class For(Loop):
 class DoWhile(Loop):
     def __init__(self, condition, body):
         self.condition = condition
+        assert isinstance(body, Generable)
         self.body = body
 
     def intro_line(self):
@@ -551,6 +560,10 @@ class DoWhile(Loop):
         yield "while (%s)" % self.condition
 
 def make_multiple_ifs(conditions_and_blocks, base=None):
+    if base == "last":
+        _, base = conditions_and_blocks[-1]
+        conditions_and_blocks = conditions_and_blocks[:-1]
+
     for cond, block in conditions_and_blocks[::-1]:
         base = If(cond, block, base)
     return base
@@ -615,6 +628,9 @@ class Comment(Generable):
         yield "/* %s */" % self.text
 
 def add_comment(comment, stmt):
+    if comment is None:
+        return stmt
+
     if isinstance(stmt, Block):
         result = Block([Comment(comment), Line()])
         result.extend(stmt.contents)
