@@ -65,7 +65,7 @@ class CLGlobal(DeclSpecifier):
         DeclSpecifier.__init__(self, subdecl, "__global")
 
 class CLImage(Value):
-    def __init__(self, dims, mode="r"):
+    def __init__(self, dims, mode, name):
         if mode == "r":
             spec = "__read_only"
         elif mode == "w":
@@ -73,7 +73,7 @@ class CLImage(Value):
         else:
             raise ValueError("mode must be one of 'r' or 'w'")
 
-        Value.__init__(self, "%s image%d_t" % (spec, dims))
+        Value.__init__(self, "%s image%dd_t" % (spec, dims), name)
 
 
 
@@ -89,13 +89,15 @@ class CLVecTypeHint(NestedDeclarator):
                 (dtype is not None and type_str is not None):
             raise ValueError("exactly one of dtype and type_str must be specified")
 
-        if dtype is not None:
-            type_str = dtype_to_cltype(dtype)+str(count)
+        if type_str is None:
+            self.type_str = dtype_to_cltype(dtype)+str(count)
+        else:
+            self.type_str = type_str
 
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("__attribute__ ((vec_type_hint(%s))) %s" % (
-            sub_decl, type_str))
+            sub_decl, self.type_str))
 
 class _CLWorkGroupSizeDeclarator(NestedDeclarator):
     def __init__(self, dim, subdecl):
