@@ -64,7 +64,7 @@ class Generable(object):
     def __str__(self):
         """Return a single string (possibly containing newlines) representing
         this code construct."""
-        return "\n".join(self.generate())
+        return "\n".join(l.rstrip() for l in self.generate())
 
     def generate(self, with_semicolon=True):
         """Generate (i.e. yield) the lines making up this code construct."""
