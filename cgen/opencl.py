@@ -2,6 +2,7 @@ from __future__ import division
 
 
 
+import numpy as np
 
 from cgen import \
         Declarator, \
@@ -16,26 +17,26 @@ def dtype_to_cltype(dtype):
     if dtype is None:
         raise ValueError("dtype may not be None")
 
-    dtype = numpy.dtype(dtype)
-    if dtype == numpy.int64:
+    dtype = np.dtype(dtype)
+    if dtype == np.int64:
         return "long"
-    elif dtype == numpy.uint64:
+    elif dtype == np.uint64:
         return "ulong"
-    elif dtype == numpy.int32:
+    elif dtype == np.int32:
         return "int"
-    elif dtype == numpy.uint32:
+    elif dtype == np.uint32:
         return "uint"
-    elif dtype == numpy.int16:
+    elif dtype == np.int16:
         return "short"
-    elif dtype == numpy.uint16:
+    elif dtype == np.uint16:
         return "ushort"
-    elif dtype == numpy.int8:
+    elif dtype == np.int8:
         return "char"
-    elif dtype == numpy.uint8:
+    elif dtype == np.uint8:
         return "uchar"
-    elif dtype == numpy.float32:
+    elif dtype == np.float32:
         return "float"
-    elif dtype == numpy.float64:
+    elif dtype == np.float64:
         return "double"
     else:
         raise ValueError, "unable to map dtype '%s'" % dtype
@@ -126,7 +127,7 @@ class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
 # vector PODs -----------------------------------------------------------------
 class CLVectorPOD(Declarator):
     def __init__(self, dtype, count, name):
-        self.dtype = numpy.dtype(dtype)
+        self.dtype = np.dtype(dtype)
         self.count = count
         self.name = name
 
