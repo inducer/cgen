@@ -8,9 +8,11 @@ from setuptools import setup
 import glob
 
 setup(name="cgen",
-      version="2011.1",
+      version="2012.1",
       description="C/C++ source generation from an AST",
-      #long_description="",
+      long_description="""
+      See `documentation <http://documen.tician.de/cgen/>`_.
+      """,
       classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
