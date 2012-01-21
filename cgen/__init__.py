@@ -658,7 +658,16 @@ class Initializer(Generable):
         tp_lines = list(tp_lines)
         for line in tp_lines[:-1]:
             yield line
-        yield "%s %s = %s;" % (tp_lines[-1], tp_decl, self.data)
+        if "\n" in self.data:
+            data_lines = self.data.split("\n")
+            yield "%s %s =" % (tp_lines[-1], tp_decl)
+            for i, l in enumerate(data_lines):
+                if i == len(data_lines)-1:
+                    yield "  %s;" % l
+                else:
+                    yield "  %s" % l
+        else:
+            yield "%s %s = %s;" % (tp_lines[-1], tp_decl, self.data)
 
 def Constant(vdecl, data):
     return Initializer(Const(vdecl), data)
