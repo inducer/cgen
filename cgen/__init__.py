@@ -627,6 +627,14 @@ class Comment(Generable):
     def generate(self):
         yield "/* %s */" % self.text
 
+class LineComment(Generable):
+    def __init__(self, text):
+        assert "\n" not in text
+        self.text = text
+
+    def generate(self):
+        yield "// %s" % self.text
+
 def add_comment(comment, stmt):
     if comment is None:
         return stmt
