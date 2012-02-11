@@ -658,7 +658,7 @@ class Initializer(Generable):
         tp_lines = list(tp_lines)
         for line in tp_lines[:-1]:
             yield line
-        if "\n" in self.data:
+        if isinstance(self.data, str) and "\n" in self.data:
             data_lines = self.data.split("\n")
             yield "%s %s =" % (tp_lines[-1], tp_decl)
             for i, l in enumerate(data_lines):
