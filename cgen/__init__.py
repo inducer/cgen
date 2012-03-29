@@ -736,6 +736,9 @@ def block_if_necessary(contents):
 
 class LiteralLines(Generable):
     def __init__(self, text):
+        # accommodate pyopencl syntax highlighting
+        text = text.lstrip("//CL//")
+
         if not text.startswith("\n"):
             raise ValueError("expected newline as first character "
                     "in literal lines")
