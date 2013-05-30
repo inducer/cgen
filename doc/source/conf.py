@@ -114,8 +114,9 @@ else:
     # further.  For a list of options available for each theme, see the
     # documentation.
     html_theme_options = {
-            'navbar_fixed_top': "true",
-            'navbar_class': "navbar navbar-inverse",
+            "navbar_fixed_top": "true",
+            "navbar_class": "navbar navbar-inverse",
+            "navbar_site_name": "Contents",
             }
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
