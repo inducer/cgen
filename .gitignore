@@ -9,5 +9,6 @@ MANIFEST
 dist
 setuptools*egg
 setuptools.pth
+setuptools*.tar.gz
 distribute*egg
 distribute*tar.gz
