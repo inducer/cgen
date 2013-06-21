@@ -10,19 +10,13 @@ except ImportError:
     import struct as _struct
 
 
-
 import numpy
-import numpy.linalg as la
 from pytools import memoize_method, memoize
-
-
 
 
 @memoize
 def is_64_bit_platform():
     return _struct.calcsize('l') == 8
-
-
 
 
 def dtype_to_ctype(dtype):
@@ -55,9 +49,7 @@ def dtype_to_ctype(dtype):
     elif dtype == numpy.complex128:
         return "std::complex<double>"
     else:
-        raise ValueError, "unable to map dtype '%s'" % dtype
-
-
+        raise ValueError("unable to map dtype '%s'" % dtype)
 
 
 class Generable(object):
@@ -71,6 +63,8 @@ class Generable(object):
 
         raise NotImplementedError
 
+
+# {{{ declarators
 
 class Declarator(Generable):
     def generate(self, with_semicolon=True):
@@ -104,6 +98,7 @@ class Declarator(Generable):
         else:
             return "%s %s" % (tp_lines, tp_decl)
 
+
 class POD(Declarator):
     """A simple declarator: The type is given as a :class:`numpy.dtype`
     and the *name* is given as a string.
@@ -128,6 +123,7 @@ class POD(Declarator):
     def default_value(self):
         return 0
 
+
 class Value(Declarator):
     """A simple declarator: *typename* and *name* are given as strings."""
 
@@ -139,15 +135,13 @@ class Value(Declarator):
         return [self.typename], self.name
 
     def struct_maker_code(self, data):
-        raise RuntimeError, "named-type values can't be put into structs"
+        raise RuntimeError("named-type values can't be put into structs")
 
     def struct_format(self):
-        raise RuntimeError, "named-type values have no struct format"
+        raise RuntimeError("named-type values have no struct format")
 
     def default_value(self):
         return 0
-
-
 
 
 class NestedDeclarator(Declarator):
@@ -170,6 +164,7 @@ class NestedDeclarator(Declarator):
     def get_decl_pair(self):
         return self.subdecl.get_decl_pair()
 
+
 class DeclSpecifier(NestedDeclarator):
     def __init__(self, subdecl, spec, sep=' '):
         NestedDeclarator.__init__(self, subdecl)
@@ -190,27 +185,33 @@ class DeclSpecifier(NestedDeclarator):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return add_spec(sub_tp), sub_decl
 
+
 class NamespaceQualifier(DeclSpecifier):
     def __init__(self, namespace, subdecl):
         DeclSpecifier.__init__(self, subdecl, namespace, '::')
- 
+
+
 class Typedef(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "typedef")
+
 
 class Static(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "static")
 
+
 class Const(NestedDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("const %s" % sub_decl)
-    
+
+
 class TemplateSpecializer(NestedDeclarator):
     def __init__(self, specializer, subdecl):
         self.specializer = specializer
         NestedDeclarator.__init__(self, subdecl)
+
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         sub_tp[-1] = sub_tp[-1] + '<%s>' % self.specializer
@@ -221,6 +222,7 @@ class MaybeUnused(NestedDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("%s __attribute__ ((unused))" % sub_decl)
+
 
 class Pointer(NestedDeclarator):
     def __init__(self, subdecl):
@@ -239,6 +241,7 @@ class Pointer(NestedDeclarator):
     def alignment_requirement(self):
         return _struct.calcsize(self.struct_format())
 
+
 class RestrictPointer(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
@@ -249,6 +252,7 @@ class Reference(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("&%s" % sub_decl)
+
 
 class ArrayOf(NestedDeclarator):
     def __init__(self, subdecl, count=None):
@@ -279,7 +283,6 @@ class ArrayOf(NestedDeclarator):
         return self.count*[self.subdecl.default_value()]
 
 
-
 class FunctionDeclaration(NestedDeclarator):
     def __init__(self, subdecl, arg_decls):
         NestedDeclarator.__init__(self, subdecl)
@@ -293,13 +296,15 @@ class FunctionDeclaration(NestedDeclarator):
             ", ".join(ad.inline() for ad in self.arg_decls)))
 
     def struct_maker_code(self, data):
-        raise RuntimeError, "function pointers can't be put into structs"
+        raise RuntimeError("function pointers can't be put into structs")
 
     def struct_format(self):
-        raise RuntimeError, "function pointers have no struct format"
+        raise RuntimeError("function pointers have no struct format")
+
+# }}}
 
 
-
+# {{{ struct-like
 
 class Struct(Declarator):
     """A structure declarator."""
@@ -336,10 +341,6 @@ class Struct(Declarator):
 
     def struct_attributes(self):
         return ""
-
-
-
-
 
 
 class GenerableStruct(Struct):
@@ -433,17 +434,20 @@ class GenerableStruct(Struct):
         return eval(code)
 
     def struct_format(self):
-        """Return the format of the struct as digested by the :mod:`struct` module."""
+        """Return the format of the struct as digested by the :mod:`struct`
+        module.
+        """
         return self.format
 
     def __len__(self):
         """Return the number of bytes occupied by this struct."""
         return self.bytes
 
+# }}}
 
 
+# {{{ template
 
-# template --------------------------------------------------------------------
 class Template(NestedDeclarator):
     def __init__(self, template_spec, subdecl):
         self.template_spec = template_spec
@@ -454,10 +458,11 @@ class Template(NestedDeclarator):
         for i in self.subdecl.generate(with_semicolon):
             yield i
 
+# }}}
 
 
+# {{{ control flow/statement stuff
 
-# control flow/statement stuff ------------------------------------------------
 class If(Generable):
     def __init__(self, condition, then_, else_=None):
         self.condition = condition
@@ -495,6 +500,7 @@ class If(Generable):
                 for line in self.else_.generate():
                     yield "  "+line
 
+
 class Loop(Generable):
     def __init__(self, body):
         self.body = body
@@ -516,6 +522,7 @@ class Loop(Generable):
     def outro_line(self):
         return None
 
+
 class CustomLoop(Loop):
     def __init__(self, intro_line, body, outro_line=None):
         self.intro_line_ = intro_line
@@ -524,8 +531,10 @@ class CustomLoop(Loop):
 
     def intro_line(self):
         return self.intro_line_
+
     def outro_line(self):
         return self.outro_line_
+
 
 class While(Loop):
     def __init__(self, condition, body):
@@ -535,6 +544,7 @@ class While(Loop):
 
     def intro_line(self):
         return "while (%s)" % self.condition
+
 
 class For(Loop):
     def __init__(self, start, condition, update, body):
@@ -548,6 +558,7 @@ class For(Loop):
     def intro_line(self):
         return "for (%s; %s; %s)" % (self.start, self.condition, self.update)
 
+
 class DoWhile(Loop):
     def __init__(self, condition, body):
         self.condition = condition
@@ -556,8 +567,10 @@ class DoWhile(Loop):
 
     def intro_line(self):
         return "do"
+
     def outro_line(self):
         yield "while (%s)" % self.condition
+
 
 def make_multiple_ifs(conditions_and_blocks, base=None):
     if base == "last":
@@ -568,10 +581,11 @@ def make_multiple_ifs(conditions_and_blocks, base=None):
         base = If(cond, block, base)
     return base
 
+# }}}
 
 
+# {{{ simple statements
 
-# simple statements -----------------------------------------------------------
 class Define(Generable):
     def __init__(self, symbol, value):
         self.symbol = symbol
@@ -579,6 +593,7 @@ class Define(Generable):
 
     def generate(self):
         yield "#define %s %s" % (self.symbol, self.value)
+
 
 class Include(Generable):
     def __init__(self, filename, system=True):
@@ -591,6 +606,7 @@ class Include(Generable):
         else:
             yield "#include \"%s\"" % self.filename
 
+
 class Pragma(Generable):
     def __init__(self, value):
         self.value = value
@@ -598,12 +614,14 @@ class Pragma(Generable):
     def generate(self):
         yield "#pragma %s" % (self.value)
 
+
 class Statement(Generable):
     def __init__(self, text):
         self.text = text
 
     def generate(self):
         yield self.text+";"
+
 
 class Assign(Generable):
     def __init__(self, lvalue, rvalue):
@@ -613,12 +631,14 @@ class Assign(Generable):
     def generate(self):
         yield "%s = %s;" % (self.lvalue, self.rvalue)
 
+
 class Line(Generable):
     def __init__(self, text=""):
         self.text = text
 
     def generate(self):
         yield self.text
+
 
 class Comment(Generable):
     def __init__(self, text):
@@ -627,6 +647,7 @@ class Comment(Generable):
     def generate(self):
         yield "/* %s */" % self.text
 
+
 class LineComment(Generable):
     def __init__(self, text):
         assert "\n" not in text
@@ -634,6 +655,7 @@ class LineComment(Generable):
 
     def generate(self):
         yield "// %s" % self.text
+
 
 def add_comment(comment, stmt):
     if comment is None:
@@ -646,8 +668,11 @@ def add_comment(comment, stmt):
     else:
         return Block([Comment(comment), Line(), stmt])
 
+# }}}
 
-# initializers ----------------------------------------------------------------
+
+# {{{ initializers
+
 class Initializer(Generable):
     def __init__(self, vdecl, data):
         self.vdecl = vdecl
@@ -669,8 +694,10 @@ class Initializer(Generable):
         else:
             yield "%s %s = %s;" % (tp_lines[-1], tp_decl, self.data)
 
+
 def Constant(vdecl, data):
     return Initializer(Const(vdecl), data)
+
 
 class ArrayInitializer(Generable):
     def __init__(self, vdecl, data):
@@ -681,6 +708,7 @@ class ArrayInitializer(Generable):
         for v_line in self.vdecl.generate(with_semicolon=False):
             yield v_line
         yield "  = { %s };" % (", ".join(str(item) for item in self.data))
+
 
 class FunctionBody(Generable):
     def __init__(self, fdecl, body):
@@ -698,11 +726,11 @@ class FunctionBody(Generable):
         for b_line in self.body.generate():
             yield b_line
 
+# }}}
 
 
+# {{{ block
 
-
-# block -----------------------------------------------------------------------
 class Block(Generable):
     def __init__(self, contents=[]):
         self.contents = contents[:]
@@ -728,11 +756,13 @@ class Block(Generable):
         self.contents.extend(data)
         self.contents.append(Line())
 
+
 def block_if_necessary(contents):
     if len(contents) == 1:
         return contents[0]
     else:
         return Block(contents)
+
 
 class LiteralLines(Generable):
     def __init__(self, text):
@@ -764,6 +794,7 @@ class LiteralLines(Generable):
         for line in self.lines:
             yield line
 
+
 class LiteralBlock(LiteralLines):
     def generate(self):
         yield "{"
@@ -771,11 +802,13 @@ class LiteralBlock(LiteralLines):
             yield "  " + line
         yield "}"
 
+
 class Module(Block):
     def generate(self):
         for c in self.contents:
             for line in c.generate():
                 yield line
+
 
 class PrivateNamespace(Block):
     def get_namespace_name(self):
@@ -803,6 +836,11 @@ class PrivateNamespace(Block):
         yield ""
         yield "using namespace %s;" % self.get_namespace_name()
 
+# }}}
+
+
+# {{{ test-ish
+
 def _test():
     s = Struct("yuck", [
         POD(numpy.float32, "h", ),
@@ -813,7 +851,7 @@ def _test():
         POD(numpy.uint16, "b_base"),
         #CudaGlobal(POD(numpy.uint8, "a_ilist_number")),
         POD(numpy.uint8, "b_ilist_number"),
-        POD(numpy.uint8, "bdry_flux_number"), # 0 if not on boundary
+        POD(numpy.uint8, "bdry_flux_number"),  # 0 if not on boundary
         POD(numpy.uint8, "reserved"),
         POD(numpy.uint32, "b_global_base"),
         ])
@@ -824,7 +862,8 @@ def _test():
     f_body = FunctionBody(f_decl, Block([
         POD(numpy.uint32, "i"),
         For("i = 0", "i < 17", "++i",
-            If("a > b",
+            If(
+                "a > b",
                 Assign("a", "b"),
                 Block([
                     Assign("a", "b-1"),
@@ -840,12 +879,14 @@ def _test():
                                           [Value('CUdeviceptr', 'inputPtr'),
                                            Value('int', 'length')]))
 
-                                    
     print s
     print f_body
     print t_decl
 
+# }}}
 
 
 if __name__ == "__main__":
     _test()
+
+# vim: fdm=marker

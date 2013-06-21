@@ -1,7 +1,6 @@
 from __future__ import division
 
 
-
 import numpy as np
 
 from cgen import \
@@ -9,8 +8,6 @@ from cgen import \
         DeclSpecifier, \
         NestedDeclarator, \
         Value
-
-
 
 
 def dtype_to_cltype(dtype):
@@ -39,31 +36,34 @@ def dtype_to_cltype(dtype):
     elif dtype == np.float64:
         return "double"
     else:
-        raise ValueError, "unable to map dtype '%s'" % dtype
+        raise ValueError("unable to map dtype '%s'" % dtype)
 
 
+# {{{ kernel
 
-
-# kernel ----------------------------------------------------------------------
 class CLKernel(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "__kernel")
 
+# }}}
 
 
+# {{{ kernel args
 
-# kernel args -----------------------------------------------------------------
 class CLConstant(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "__constant")
+
 
 class CLLocal(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "__local")
 
+
 class CLGlobal(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "__global")
+
 
 class CLImage(Value):
     def __init__(self, dims, mode, name):
@@ -76,10 +76,11 @@ class CLImage(Value):
 
         Value.__init__(self, "%s image%dd_t" % (spec, dims), name)
 
+# }}}
 
 
+# {{{ function attributes
 
-# function attributes ---------------------------------------------------------
 class CLVecTypeHint(NestedDeclarator):
     def __init__(self, dtype=None, count=None, type_str=None):
         if (dtype is None) != (count is None):
@@ -100,6 +101,7 @@ class CLVecTypeHint(NestedDeclarator):
         return sub_tp, ("__attribute__ ((vec_type_hint(%s))) %s" % (
             sub_decl, self.type_str))
 
+
 class _CLWorkGroupSizeDeclarator(NestedDeclarator):
     def __init__(self, dim, subdecl):
         NestedDeclarator.__init__(self, subdecl)
@@ -109,11 +111,13 @@ class _CLWorkGroupSizeDeclarator(NestedDeclarator):
 
         self.dim = dim
 
+
 class CLWorkGroupSizeHint(_CLWorkGroupSizeDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("__attribute__ ((work_group_size_hint(%s))) %s" % (
             ", ".join(str(d) for d in self.dim), sub_decl))
+
 
 class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
     def get_decl_pair(self):
@@ -121,10 +125,11 @@ class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
         return sub_tp, ("__attribute__ ((reqd_work_group_size(%s))) %s" % (
             ", ".join(str(d) for d in self.dim), sub_decl))
 
+# }}}
 
 
+# {{{ vector PODs
 
-# vector PODs -----------------------------------------------------------------
 class CLVectorPOD(Declarator):
     def __init__(self, dtype, count, name):
         self.dtype = np.dtype(dtype)
@@ -147,3 +152,6 @@ class CLVectorPOD(Declarator):
     def default_value(self):
         return [0]*self.count
 
+# }}}
+
+# vim: fdm=marker
