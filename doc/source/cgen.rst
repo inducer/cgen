@@ -63,6 +63,10 @@ Declarators
     :show-inheritance:
     :members: __init__, make, make_with_defaults, __len__, struct_format
 
+.. autoclass:: Enum
+    :show-inheritance:
+    :members: stringify_value, get_typedef, get_c_defines, get_flag_names_and_values
+
 Nested Declarators
 ------------------
 

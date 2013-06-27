@@ -443,6 +443,74 @@ class GenerableStruct(Struct):
         """Return the number of bytes occupied by this struct."""
         return self.bytes
 
+
+class Enum(Generable):
+    """An enum-like class for Python that can generate an equivalent C-level
+    declaration. Does not work within the usual 'declarator' framework
+    because it uses macros to define values, and a separate typedef to define the
+    value type.
+
+    .. versionadded:: 2013.2
+
+    To use, derive from this class, and define the following things:
+
+    .. attribute:: c_name
+    .. attribute:: dtype
+    .. attribute:: c_value_prefix
+
+        A (usually upper-case) prefix to be used as a prefix to the names defined
+        on the Python side.
+    .. attribute:: VALUE
+
+        Any class attribute with an all-upper-case name is taken to be as an
+        enum value.
+    """
+
+    @classmethod
+    def get_flag_names_and_values(cls):
+        return [(name, getattr(cls, name))
+                for name in sorted(dir(cls))
+                if name[0].isupper()]
+
+    @classmethod
+    def get_c_defines_lines(cls):
+        return [
+                "#define %s%s %d" % (cls.c_value_prefix, flag_name, value)
+                for flag_name, value in cls.get_flag_names_and_values()]
+
+    @classmethod
+    def get_c_defines(cls):
+        """Return a string with C defines corresponding to these constants.
+        """
+
+        return "\n".join(cls.get_c_defines_lines())
+
+    @classmethod
+    def get_c_typedef_line(cls):
+        """Returns a typedef to define this enum in C."""
+
+        from pyopencl.tools import dtype_to_ctype
+        return "typedef %s %s;" % (dtype_to_ctype(cls.dtype), cls.c_name)
+
+    @classmethod
+    def get_c_typedef(cls):
+        return "\n\n%s\n\n" % cls.get_c_typedef_line()
+
+    @classmethod
+    def generate(cls):
+        yield cls.get_c_typedef_line()
+        for l in cls.get_c_defines_lines():
+            yield l
+
+    @classmethod
+    def stringify_value(cls, val):
+        "Return a string description of the flags set in *val*."
+
+        return "|".join(
+                flag_name
+                for flag_name, flag_value in cls.get_flag_names_and_values()
+                if val & flag_value)
+
 # }}}
 
 
