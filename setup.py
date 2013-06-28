@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
         name="cgen",
-        version="2013.1.1",
+        version="2013.1.2",
         description="C/C++ source generation from an AST",
         long_description="""
             See `documentation <http://documen.tician.de/cgen/>`_
@@ -27,6 +27,7 @@ setup(
         author=u"Andreas Kloeckner",
         author_email="inform@tiker.net",
         license="MIT",
+        url="http://documen.tician.de/cgen/",
 
         packages=["cgen"],
         install_requires=[
