@@ -3,6 +3,12 @@
 
 from setuptools import setup
 
+try:
+    from distutils.command.build_py import build_py_2to3 as build_py
+except ImportError:
+    # 2.x
+    from distutils.command.build_py import build_py
+
 setup(
         name="cgen",
         version="2013.1.2",
@@ -33,4 +39,6 @@ setup(
         install_requires=[
             "pytools>=8",
             ],
-        )
+
+        # 2to3 invocation
+        cmdclass={'build_py': build_py})
