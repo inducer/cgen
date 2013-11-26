@@ -30,7 +30,7 @@ setup(
             'Topic :: Utilities',
             ],
 
-        author=u"Andreas Kloeckner",
+        author="Andreas Kloeckner",
         author_email="inform@tiker.net",
         license="MIT",
         url="http://documen.tician.de/cgen/",

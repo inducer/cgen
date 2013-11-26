@@ -1,6 +1,6 @@
 """Generator for C/C++."""
 
-from __future__ import division
+
 
 __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
@@ -175,7 +175,7 @@ class DeclSpecifier(NestedDeclarator):
         def add_spec(sub_it):
             it = iter(sub_it)
             try:
-                yield "%s%s%s" % (self.spec, self.sep, it.next())
+                yield "%s%s%s" % (self.spec, self.sep, next(it))
             except StopIteration:
                 pass
 
@@ -890,7 +890,7 @@ class PrivateNamespace(Block):
 
         for c in self.contents:
             for line in c.generate():
-                checksum.update(line)
+                checksum.update(line.encode('utf-8'))
 
         return "private_namespace_"+checksum.hexdigest()
 
@@ -947,9 +947,9 @@ def _test():
                                           [Value('CUdeviceptr', 'inputPtr'),
                                            Value('int', 'length')]))
 
-    print s
-    print f_body
-    print t_decl
+    print(s)
+    print(f_body)
+    print(t_decl)
 
 # }}}
 
