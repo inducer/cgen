@@ -890,7 +890,7 @@ class PrivateNamespace(Block):
 
         for c in self.contents:
             for line in c.generate():
-                checksum.update(line)
+                checksum.update(line.encode('utf-8'))
 
         return "private_namespace_"+checksum.hexdigest()
 
