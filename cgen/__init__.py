@@ -947,9 +947,9 @@ def _test():
                                           [Value('CUdeviceptr', 'inputPtr'),
                                            Value('int', 'length')]))
 
-    print s
-    print f_body
-    print t_decl
+    print(s     )
+    print(f_body)
+    print(t_decl)
 
 # }}}
 
