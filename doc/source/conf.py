@@ -24,7 +24,7 @@ import sys, os
 env_activator = os.path.expanduser(
         "~/dam/research/software/env/bin/activate_this.py")
 if os.path.exists(env_activator):
-    execfile(env_activator, dict(__file__=env_activator))
+    exec(compile(open(env_activator).read(), env_activator, 'exec'), dict(__file__=env_activator))
 
 # General configuration
 # ---------------------

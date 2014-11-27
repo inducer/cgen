@@ -1,6 +1,8 @@
 """Generator for C/C++."""
 
 from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
 
 __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
@@ -175,7 +177,7 @@ class DeclSpecifier(NestedDeclarator):
         def add_spec(sub_it):
             it = iter(sub_it)
             try:
-                yield "%s%s%s" % (self.spec, self.sep, it.next())
+                yield "%s%s%s" % (self.spec, self.sep, next(it))
             except StopIteration:
                 pass
 
@@ -947,7 +949,7 @@ def _test():
                                           [Value('CUdeviceptr', 'inputPtr'),
                                            Value('int', 'length')]))
 
-    print(s     )
+    print(s)
     print(f_body)
     print(t_decl)
 
