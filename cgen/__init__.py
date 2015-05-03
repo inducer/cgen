@@ -765,7 +765,7 @@ class Initializer(Generable):
             yield "%s %s = %s;" % (tp_lines[-1], tp_decl, self.data)
 
 
-def Constant(vdecl, data):
+def Constant(vdecl, data):  # noqa
     return Initializer(Const(vdecl), data)
 
 
@@ -820,6 +820,9 @@ class Block(Generable):
 
     def extend(self, data):
         self.contents.extend(data)
+
+    def insert(self, i, data):
+        self.contents.insert(i, data)
 
     def extend_log_block(self, descr, data):
         self.contents.append(Comment(descr))
