@@ -639,7 +639,7 @@ class DoWhile(Loop):
         return "do"
 
     def outro_line(self):
-        yield "while (%s)" % self.condition
+        return "while (%s);" % self.condition
 
 
 def make_multiple_ifs(conditions_and_blocks, base=None):
