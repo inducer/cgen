@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
         name="cgen",
-        version="2014.1",
+        version="2015.1",
         description="C/C++ source generation from an AST",
         long_description="""
             See `documentation <http://documen.tician.de/cgen/>`_
@@ -31,5 +31,6 @@ setup(
 
         packages=["cgen"],
         install_requires=[
-            "pytools>=8",
+            "pytools>=2015.1.2",
+            "numpy>=1.6",
             ])
