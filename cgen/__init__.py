@@ -224,6 +224,17 @@ class MaybeUnused(NestedDeclarator):
         return sub_tp, ("%s __attribute__ ((unused))" % sub_decl)
 
 
+class AlignedAttribute(NestedDeclarator):
+    def __init__(self, align_bytes, subdecl):
+        super(AlignedAttribute, self).__init__(subdecl)
+        self.align_bytes = align_bytes
+
+    def get_decl_pair(self):
+        sub_tp, sub_decl = self.subdecl.get_decl_pair()
+        return sub_tp, ("%s __attribute__ ((aligned (%d)))"
+                % (sub_decl, self.align_bytes))
+
+
 class Pointer(NestedDeclarator):
     def __init__(self, subdecl):
         NestedDeclarator.__init__(self, subdecl)
