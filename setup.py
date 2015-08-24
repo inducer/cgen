@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
         name="cgen",
-        version="2015.1",
+        version="2015.1.1",
         description="C/C++ source generation from an AST",
         long_description="""
             See `documentation <http://documen.tician.de/cgen/>`_
