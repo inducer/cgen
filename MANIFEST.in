@@ -4,3 +4,5 @@ include doc/Makefile
 include doc/source/conf.py
 include doc/source/_static/*.css
 include doc/source/_templates/*.html
+
+include README.rst

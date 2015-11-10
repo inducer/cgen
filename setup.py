@@ -3,14 +3,14 @@
 
 from setuptools import setup
 
+with open("README.rst", "rt") as inf:
+    readme = inf.read()
+
 setup(
         name="cgen",
         version="2015.1.1",
         description="C/C++ source generation from an AST",
-        long_description="""
-            See `documentation <http://documen.tician.de/cgen/>`_
-            and `git tree <http://github.com/inducer/cgen>`_.
-            """,
+        long_description=readme,
         classifiers=[
             'Development Status :: 4 - Beta',
             'Intended Audience :: Developers',
