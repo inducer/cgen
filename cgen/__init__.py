@@ -228,7 +228,7 @@ class Const(NestedDeclarator):
 
 class Extern(DeclSpecifier):
     def __init__(self, language, subdecl):
-        super(Extern, self).__init__( subdecl, "extern \"%s\"" % language)
+        super(Extern, self).__init__(subdecl, "extern \"%s\"" % language)
 
 
 class TemplateSpecializer(NestedDeclarator):
