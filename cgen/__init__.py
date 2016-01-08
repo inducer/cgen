@@ -226,6 +226,11 @@ class Const(NestedDeclarator):
         return sub_tp, ("const %s" % sub_decl)
 
 
+class Extern(DeclSpecifier):
+    def __init__(self, language, subdecl):
+        super(Extern, self).__init__( subdecl, "extern \"%s\"" % language)
+
+
 class TemplateSpecializer(NestedDeclarator):
     def __init__(self, specializer, subdecl):
         self.specializer = specializer
