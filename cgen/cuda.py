@@ -1,7 +1,7 @@
 from __future__ import division
 
 
-from cgen import DeclSpecifier, Pointer
+from cgen import NestedDeclarator, DeclSpecifier, Pointer
 
 
 class CudaGlobal(DeclSpecifier):
@@ -30,11 +30,15 @@ class CudaRestrictPointer(Pointer):
         return sub_tp, ("*__restrict__ %s" % sub_decl)
 
 
-class CudaLaunchBounds(DeclSpecifier):
+class CudaLaunchBounds(NestedDeclarator):
     def __init__(self, max_threads_per_block, subdecl, min_blocks_per_mp=None):
         if min_blocks_per_mp is not None:
-            lb = "%s, %s" % (max_threads_per_block, min_blocks_per_mp)
+            self.lb = "%s, %s" % (max_threads_per_block, min_blocks_per_mp)
         else:
-            lb = "%s" % (max_threads_per_block)
+            self.lb = "%s" % (max_threads_per_block)
 
-        DeclSpecifier.__init__(self, subdecl, "__launch_bounds__(%s)" % (lb,))
+        super(CudaLaunchBounds, self).__init__(subdecl)
+
+    def get_decl_pair(self):
+        sub_tp, sub_decl = self.subdecl.get_decl_pair()
+        return sub_tp, "__launch_bounds__(%s) %s" % (self.lb, sub_decl)
