@@ -798,6 +798,22 @@ class Initializer(Generable):
             yield "%s %s = %s;" % (tp_lines[-1], tp_decl, self.data)
 
 
+class InlineInitializer(Initializer):
+    """
+    Class to represent Initializers (int i=0) without the semicolon in the end
+    (e.g. in a for statement)
+    Usage: same as cgen.Initializer
+    Result: same as cgen.Initializer except for the lack of a semi-colon at the end
+    """
+    def generate(self):
+        result = super(InlineInitializer, self).generate()
+        for v in result:
+            if v.endswith(';'):
+                yield v[:-1]
+            else:
+                yield v
+
+
 def Constant(vdecl, data):  # noqa
     return Initializer(Const(vdecl), data)
 
@@ -914,6 +930,21 @@ class Module(Block):
         for c in self.contents:
             for line in c.generate():
                 yield line
+
+
+class IfDef(Module):
+    """
+    Class to represent IfDef-Else-EndIf construct for the C preprocessor.
+    :param condition: the condition in IfDef
+    :param iflines: the block of code inside the if [an array of type Generable]
+    :param elselines: the block of code inside the else [an array of type Generable]
+    """
+    def __init__(self, condition, iflines, elselines):
+        ifdef_line = Line('#ifdef %s' % condition)
+        else_line = Line('#else')
+        endif_line = Line('#endif')
+        lines = [ifdef_line]+iflines+[else_line]+elselines+[endif_line]
+        super(IfDef, self).__init__(lines)
 
 
 class PrivateNamespace(Block):
