@@ -8,7 +8,7 @@ with open("README.rst", "rt") as inf:
 
 setup(
         name="cgen",
-        version="2015.2",
+        version="2016.1",
         description="C/C++ source generation from an AST",
         long_description=readme,
         classifiers=[
