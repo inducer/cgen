@@ -852,6 +852,8 @@ class FunctionBody(Generable):
 
 class Block(Generable):
     def __init__(self, contents=[]):
+        if(isinstance(contents, Block)):
+            contents = contents.contents
         self.contents = contents[:]
 
         for item in contents:
