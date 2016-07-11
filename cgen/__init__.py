@@ -927,11 +927,14 @@ class LiteralBlock(LiteralLines):
         yield "}"
 
 
-class Module(Block):
+class Collection(Block):
     def generate(self):
         for c in self.contents:
             for line in c.generate():
                 yield line
+
+
+Module = Collection
 
 
 class IfDef(Module):
