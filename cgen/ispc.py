@@ -29,20 +29,28 @@ class ISPCVarying(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "varying")
 
+    mapper_method = "map_ispc_varying"
+
 
 class ISPCUniform(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "uniform")
+
+    mapper_method = "map_ispc_uniform"
 
 
 class ISPCExport(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "export")
 
+    mapper_method = "map_ispc_export"
+
 
 class ISPCTask(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "task")
+
+    mapper_method = "map_ispc_task"
 
 
 class ISPCVaryingPointer(Pointer):
@@ -50,8 +58,12 @@ class ISPCVaryingPointer(Pointer):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("*varying %s" % sub_decl)
 
+    mapper_method = "map_ispc_varying_pointer"
+
 
 class ISPCUniformPointer(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("*uniform %s" % sub_decl)
+
+    mapper_method = "map_ispc_uniform_pointer"
