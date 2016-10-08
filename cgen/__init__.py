@@ -142,6 +142,8 @@ class POD(Declarator):
     def default_value(self):
         return 0
 
+    mapper_method = "map_pod"
+
 
 class Value(Declarator):
     """A simple declarator: *typename* and *name* are given as strings."""
@@ -161,6 +163,8 @@ class Value(Declarator):
 
     def default_value(self):
         return 0
+
+    mapper_method = "map_value"
 
 
 class NestedDeclarator(Declarator):
@@ -209,15 +213,21 @@ class NamespaceQualifier(DeclSpecifier):
     def __init__(self, namespace, subdecl):
         DeclSpecifier.__init__(self, subdecl, namespace, '::')
 
+    mapper_method = "map_namespace_qualifier"
+
 
 class Typedef(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "typedef")
 
+    mapper_method = "map_typedef"
+
 
 class Static(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "static")
+
+    mapper_method = "map_static"
 
 
 class Const(NestedDeclarator):
@@ -225,10 +235,14 @@ class Const(NestedDeclarator):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("const %s" % sub_decl)
 
+    mapper_method = "map_const"
+
 
 class Extern(DeclSpecifier):
     def __init__(self, language, subdecl):
         super(Extern, self).__init__(subdecl, "extern \"%s\"" % language)
+
+    mapper_method = "map_extern"
 
 
 class TemplateSpecializer(NestedDeclarator):
@@ -241,11 +255,15 @@ class TemplateSpecializer(NestedDeclarator):
         sub_tp[-1] = sub_tp[-1] + '<%s>' % self.specializer
         return sub_tp, sub_decl
 
+    mapper_method = "map_template_specializer"
+
 
 class MaybeUnused(NestedDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("%s __attribute__ ((unused))" % sub_decl)
+
+    mapper_method = "map_maybe_unused"
 
 
 class AlignedAttribute(NestedDeclarator):
@@ -257,6 +275,8 @@ class AlignedAttribute(NestedDeclarator):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("%s __attribute__ ((aligned (%d)))"
                 % (sub_decl, self.align_bytes))
+
+    mapper_method = "map_aligned"
 
 
 class Pointer(NestedDeclarator):
@@ -276,17 +296,23 @@ class Pointer(NestedDeclarator):
     def alignment_requirement(self):
         return _struct.calcsize(self.struct_format())
 
+    mapper_method = "map_pointer"
+
 
 class RestrictPointer(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("*restrict %s" % sub_decl)
 
+    mapper_method = "map_restrict_pointer"
+
 
 class Reference(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("&%s" % sub_decl)
+
+    mapper_method = "map_reference"
 
 
 class ArrayOf(NestedDeclarator):
@@ -317,6 +343,8 @@ class ArrayOf(NestedDeclarator):
     def default_value(self):
         return self.count*[self.subdecl.default_value()]
 
+    mapper_method = "map_array_of"
+
 
 class FunctionDeclaration(NestedDeclarator):
     def __init__(self, subdecl, arg_decls):
@@ -335,6 +363,8 @@ class FunctionDeclaration(NestedDeclarator):
 
     def struct_format(self):
         raise RuntimeError("function pointers have no struct format")
+
+    mapper_method = "map_function_declaration"
 
 # }}}
 
@@ -376,6 +406,8 @@ class Struct(Declarator):
 
     def struct_attributes(self):
         return ""
+
+    mapper_method = "map_struct"
 
 
 class GenerableStruct(Struct):
@@ -478,6 +510,8 @@ class GenerableStruct(Struct):
         """Return the number of bytes occupied by this struct."""
         return self.bytes
 
+    mapper_method = "map_generable_struct"
+
 
 class Enum(Generable):
     """An enum-like class for Python that can generate an equivalent C-level
@@ -561,6 +595,8 @@ class Template(NestedDeclarator):
         for i in self.subdecl.generate(with_semicolon):
             yield i
 
+    mapper_method = "map_template"
+
 # }}}
 
 
@@ -602,6 +638,8 @@ class If(Generable):
             else:
                 for line in self.else_.generate():
                     yield "  "+line
+
+    mapper_method = "map_if"
 
 
 class Loop(Generable):
@@ -648,6 +686,8 @@ class While(Loop):
     def intro_line(self):
         return "while (%s)" % self.condition
 
+    mapper_method = "map_while"
+
 
 class For(Loop):
     def __init__(self, start, condition, update, body):
@@ -661,6 +701,8 @@ class For(Loop):
     def intro_line(self):
         return "for (%s; %s; %s)" % (self.start, self.condition, self.update)
 
+    mapper_method = "map_for"
+
 
 class DoWhile(Loop):
     def __init__(self, condition, body):
@@ -673,6 +715,8 @@ class DoWhile(Loop):
 
     def outro_line(self):
         return "while (%s);" % self.condition
+
+    mapper_method = "map_do_while"
 
 
 def make_multiple_ifs(conditions_and_blocks, base=None):
@@ -697,6 +741,8 @@ class Define(Generable):
     def generate(self):
         yield "#define %s %s" % (self.symbol, self.value)
 
+    mapper_method = "map_define"
+
 
 class Include(Generable):
     def __init__(self, filename, system=True):
@@ -709,6 +755,8 @@ class Include(Generable):
         else:
             yield "#include \"%s\"" % self.filename
 
+    mapper_method = "map_include"
+
 
 class Pragma(Generable):
     def __init__(self, value):
@@ -717,6 +765,8 @@ class Pragma(Generable):
     def generate(self):
         yield "#pragma %s" % (self.value)
 
+    mapper_method = "map_pragma"
+
 
 class Statement(Generable):
     def __init__(self, text):
@@ -724,6 +774,18 @@ class Statement(Generable):
 
     def generate(self):
         yield self.text+";"
+
+    mapper_method = "map_statement"
+
+
+class ExpressionStatement(Generable):
+    def __init__(self, expr):
+        self.expr = expr
+
+    def generate(self):
+        yield str(self.text)+";"
+
+    mapper_method = "map_expression_statement"
 
 
 class Assign(Generable):
@@ -734,6 +796,8 @@ class Assign(Generable):
     def generate(self):
         yield "%s = %s;" % (self.lvalue, self.rvalue)
 
+    mapper_method = "map_assignment"
+
 
 class Line(Generable):
     def __init__(self, text=""):
@@ -741,6 +805,8 @@ class Line(Generable):
 
     def generate(self):
         yield self.text
+
+    mapper_method = "map_line"
 
 
 class Comment(Generable):
@@ -750,6 +816,8 @@ class Comment(Generable):
     def generate(self):
         yield "/* %s */" % self.text
 
+    mapper_method = "map_comment"
+
 
 class LineComment(Generable):
     def __init__(self, text):
@@ -758,6 +826,8 @@ class LineComment(Generable):
 
     def generate(self):
         yield "// %s" % self.text
+
+    mapper_method = "map_line_comment"
 
 
 def add_comment(comment, stmt):
@@ -797,6 +867,8 @@ class Initializer(Generable):
         else:
             yield "%s %s = %s;" % (tp_lines[-1], tp_decl, self.data)
 
+    mapper_method = "map_initializer"
+
 
 class InlineInitializer(Initializer):
     """
@@ -828,6 +900,8 @@ class ArrayInitializer(Generable):
             yield v_line
         yield "  = { %s };" % (", ".join(str(item) for item in self.data))
 
+    mapper_method = "map_array_initializer"
+
 
 class FunctionBody(Generable):
     def __init__(self, fdecl, body):
@@ -844,6 +918,8 @@ class FunctionBody(Generable):
             yield f_line
         for b_line in self.body.generate():
             yield b_line
+
+    mapper_method = "map_function_body"
 
 # }}}
 
@@ -879,6 +955,8 @@ class Block(Generable):
         self.contents.append(Comment(descr))
         self.contents.extend(data)
         self.contents.append(Line())
+
+    mapper_method = "map_block"
 
 
 def block_if_necessary(contents):
@@ -918,6 +996,8 @@ class LiteralLines(Generable):
         for line in self.lines:
             yield line
 
+    mapper_method = "map_literal_lines"
+
 
 class LiteralBlock(LiteralLines):
     def generate(self):
@@ -950,6 +1030,8 @@ class IfDef(Module):
         endif_line = Line('#endif')
         lines = [ifdef_line]+iflines+[else_line]+elselines+[endif_line]
         super(IfDef, self).__init__(lines)
+
+    mapper_method = "map_ifdef"
 
 
 class PrivateNamespace(Block):

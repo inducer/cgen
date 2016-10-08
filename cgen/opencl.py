@@ -45,6 +45,8 @@ class CLKernel(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "__kernel")
 
+    mapper_method = "map_cl_kernel"
+
 # }}}
 
 
@@ -54,15 +56,21 @@ class CLConstant(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "__constant")
 
+    mapper_method = "map_cl_constant"
+
 
 class CLLocal(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "__local")
 
+    mapper_method = "map_cl_local"
+
 
 class CLGlobal(DeclSpecifier):
     def __init__(self, subdecl):
         DeclSpecifier.__init__(self, subdecl, "__global")
+
+    mapper_method = "map_cl_global"
 
 
 class CLImage(Value):
@@ -76,13 +84,15 @@ class CLImage(Value):
 
         Value.__init__(self, "%s image%dd_t" % (spec, dims), name)
 
+    mapper_method = "map_cl_image"
+
 # }}}
 
 
 # {{{ function attributes
 
 class CLVecTypeHint(NestedDeclarator):
-    def __init__(self, dtype=None, count=None, type_str=None):
+    def __init__(self, subdecl, dtype=None, count=None, type_str=None):
         if (dtype is None) != (count is None):
             raise ValueError("dtype and count must always be "
                     "specified together")
@@ -96,10 +106,14 @@ class CLVecTypeHint(NestedDeclarator):
         else:
             self.type_str = type_str
 
+        super(CLVecTypeHint, self).__init__(subdecl)
+
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("__attribute__ ((vec_type_hint(%s))) %s" % (
             sub_decl, self.type_str))
+
+    mapper_method = "map_cl_vec_type_hint"
 
 
 class _CLWorkGroupSizeDeclarator(NestedDeclarator):
@@ -118,12 +132,16 @@ class CLWorkGroupSizeHint(_CLWorkGroupSizeDeclarator):
         return sub_tp, ("__attribute__ ((work_group_size_hint(%s))) %s" % (
             ", ".join(str(d) for d in self.dim), sub_decl))
 
+    mapper_method = "map_cl_workgroup_size_hint"
+
 
 class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, ("__attribute__ ((reqd_work_group_size(%s))) %s" % (
             ", ".join(str(d) for d in self.dim), sub_decl))
+
+    mapper_method = "map_cl_required_wokgroup_size"
 
 # }}}
 
@@ -151,6 +169,8 @@ class CLVectorPOD(Declarator):
 
     def default_value(self):
         return [0]*self.count
+
+    mapper_method = "map_cl_vector_pod"
 
 # }}}
 
