@@ -785,7 +785,7 @@ class ExpressionStatement(Generable):
         self.expr = expr
 
     def generate(self):
-        yield str(self.text)+";"
+        yield str(self.expr)+";"
 
     mapper_method = "map_expression_statement"
 
