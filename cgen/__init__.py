@@ -614,7 +614,8 @@ class If(Generable):
         self.else_ = else_
 
     def generate(self):
-        condition_lines = self.condition.split("\n")
+        cond_str = str(self.condition)
+        condition_lines = cond_str.split("\n")
         if len(condition_lines) > 1:
             yield "if ("
             for l in condition_lines:
