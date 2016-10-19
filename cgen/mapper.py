@@ -76,7 +76,9 @@ class IdentityMapper(ASTMapper):
 
     map_static = map_typedef
     map_const = map_typedef
-    map_extern = map_typedef
+
+    def map_extern(self, node, *args, **kwargs):
+        return type(node)(node.language, self.rec(node.subdecl, *args, **kwargs))
 
     def map_template_specializer(self, node, *args, **kwargs):
         return type(node)(node.specializer, self.rec(node.subdecl, *args, **kwargs))
@@ -240,6 +242,11 @@ class IdentityMapper(ASTMapper):
     map_ispc_task = map_ispc_varying
     map_ispc_varying_pointer = map_ispc_varying
     map_ispc_uniform_pointer = map_ispc_varying
+
+    def map_ispc_launch(self, node, *args, **kwargs):
+        return type(node)(
+                tuple(self.map_expression(gs_i) for gs_i in node.grid),
+                self.map_expression(node.expr))
 
     # }}}
 

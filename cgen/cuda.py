@@ -42,15 +42,18 @@ class CudaRestrictPointer(Pointer):
 
 class CudaLaunchBounds(NestedDeclarator):
     def __init__(self, max_threads_per_block, subdecl, min_blocks_per_mp=None):
-        if min_blocks_per_mp is not None:
-            self.lb = "%s, %s" % (max_threads_per_block, min_blocks_per_mp)
-        else:
-            self.lb = "%s" % (max_threads_per_block)
+        self.max_threads_per_block = max_threads_per_block
+        self.min_blocks_per_mp = min_blocks_per_mp
 
         super(CudaLaunchBounds, self).__init__(subdecl)
 
     def get_decl_pair(self):
+        if self.min_blocks_per_mp is not None:
+            lb = "%s, %s" % (self.max_threads_per_block, self.min_blocks_per_mp)
+        else:
+            lb = "%s" % (self.max_threads_per_block)
+
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, "__launch_bounds__(%s) %s" % (self.lb, sub_decl)
+        return sub_tp, "__launch_bounds__(%s) %s" % (lb, sub_decl)
 
     mapper_method = "map_cuda_launch_bounds"
