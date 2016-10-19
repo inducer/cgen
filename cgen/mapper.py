@@ -155,7 +155,7 @@ class IdentityMapper(ASTMapper):
         return node
 
     def map_statement(self, node, *args, **kwargs):
-        return type(node)()
+        return type(node)(node.text)
 
     def map_expression_statement(self, node, *args, **kwargs):
         return type(node)(
