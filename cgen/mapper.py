@@ -243,6 +243,11 @@ class IdentityMapper(ASTMapper):
     map_ispc_varying_pointer = map_ispc_varying
     map_ispc_uniform_pointer = map_ispc_varying
 
+    def map_ispc_launch(self, node, *args, **kwargs):
+        return type(node)(
+                tuple(self.map_expression(gs_i) for gs_i in node.grid),
+                self.map_expression(node.expr))
+
     # }}}
 
     # {{{ cuda

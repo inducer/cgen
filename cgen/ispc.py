@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from cgen import DeclSpecifier, Pointer
+from cgen import Generable, DeclSpecifier, Pointer
 
 
 class ISPCVarying(DeclSpecifier):
@@ -67,3 +67,20 @@ class ISPCUniformPointer(Pointer):
         return sub_tp, ("*uniform %s" % sub_decl)
 
     mapper_method = "map_ispc_uniform_pointer"
+
+
+class ISPCLaunch(Generable):
+    def __init__(self, grid, expr):
+        self.grid = grid
+        self.expr = expr
+
+    def generate(self):
+        if self.grid:
+            launch_spec = "[%s]" % ", ".join(
+                    str(gs_i) for gs_i in self.grid)
+        else:
+            launch_spec = ""
+
+        yield "launch%s %s;" % (launch_spec, self.expr)
+
+    mapper_method = "map_ispc_launch"
