@@ -124,7 +124,9 @@ class IdentityMapper(ASTMapper):
         return type(node)(
                 self.map_expression(node.condition),
                 self.rec(node.then_, *args, **kwargs),
-                self.rec(node.else_, *args, **kwargs))
+                self.rec(node.else_, *args, **kwargs)
+                if node.else_ is not None
+                else None)
 
     def map_while(self, node, *args, **kwargs):
         return type(node)(
