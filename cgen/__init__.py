@@ -240,6 +240,7 @@ class Const(NestedDeclarator):
 
 class Extern(DeclSpecifier):
     def __init__(self, language, subdecl):
+        self.language = language
         super(Extern, self).__init__(subdecl, "extern \"%s\"" % language)
 
     mapper_method = "map_extern"
