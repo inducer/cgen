@@ -678,6 +678,8 @@ class CustomLoop(Loop):
     def outro_line(self):
         return self.outro_line_
 
+    mapper_method = "map_custom_loop"
+
 
 class While(Loop):
     def __init__(self, condition, body):
