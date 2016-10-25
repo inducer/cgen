@@ -251,8 +251,9 @@ class IdentityMapper(ASTMapper):
 
     def map_ispc_launch(self, node, *args, **kwargs):
         return type(node)(
-                tuple(self.map_expression(gs_i) for gs_i in node.grid),
-                self.map_expression(node.expr))
+                tuple(self.map_expression(gs_i, *args, **kwargs)
+                    for gs_i in node.grid),
+                self.map_expression(node.expr, *args, **kwargs))
 
     # }}}
 
