@@ -303,7 +303,7 @@ class Pointer(NestedDeclarator):
 class RestrictPointer(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("*restrict %s" % sub_decl)
+        return sub_tp, ("*__restrict__ %s" % sub_decl)
 
     mapper_method = "map_restrict_pointer"
 
