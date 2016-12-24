@@ -67,6 +67,8 @@ def dtype_to_ctype(dtype):
         return "std::complex<float>"
     elif dtype == numpy.complex128:
         return "std::complex<double>"
+    elif dtype == numpy.void:
+        return "void"
     else:
         raise ValueError("unable to map dtype '%s'" % dtype)
 
