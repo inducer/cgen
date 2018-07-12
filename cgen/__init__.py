@@ -816,11 +816,15 @@ class Line(Generable):
 
 
 class Comment(Generable):
-    def __init__(self, text):
+    def __init__(self, text, skip_space=False):
         self.text = text
+        if skip_space is False:
+            self.fmt_str = "/* %s */"
+        else:
+            self.fmt_str = "/*%s*/"
 
     def generate(self):
-        yield "/* %s */" % self.text
+        yield self.fmt_str % self.text
 
     mapper_method = "map_comment"
 
