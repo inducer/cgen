@@ -829,6 +829,24 @@ class Comment(Generable):
     mapper_method = "map_comment"
 
 
+class MultilineComment(Generable):
+    def __init__(self, text, skip_space=False):
+        self.text = text
+        self.skip_space = skip_space
+
+    def generate(self):
+        yield '/**'
+        if self.skip_space is True:
+            line_begin, comment_end = '*', '*/'
+        else:
+            line_begin, comment_end = ' * ', ' */'
+        for line in self.text.splitlines():
+            yield line_begin + line
+        yield comment_end
+
+    mapper_method = "map_multiline_comment"
+
+
 class LineComment(Generable):
     def __init__(self, text):
         assert "\n" not in text
