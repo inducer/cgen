@@ -211,6 +211,9 @@ class IdentityMapper(ASTMapper):
     def map_ifdef(self, node, *args, **kwargs):
         return node
 
+    def map_ifndef(self, node, *args, **kwargs):
+        return node
+
     def map_custom_loop(self, node, *args, **kwargs):
         return type(node)(node.intro_line_,
                           self.rec(node.body, *args, **kwargs),

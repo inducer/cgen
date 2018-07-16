@@ -1054,12 +1054,30 @@ class IfDef(Module):
     """
     def __init__(self, condition, iflines, elselines):
         ifdef_line = Line('#ifdef %s' % condition)
-        else_line = Line('#else')
+        if len(elselines):
+            elselines.insert(0, Line('#else'))
         endif_line = Line('#endif')
-        lines = [ifdef_line]+iflines+[else_line]+elselines+[endif_line]
+        lines = [ifdef_line]+iflines+elselines+[endif_line]
         super(IfDef, self).__init__(lines)
 
     mapper_method = "map_ifdef"
+
+
+class IfNDef(Module):
+    """
+    Class to represent IfNDef-Else-EndIf construct for the C preprocessor.
+    :param condition: the condition in IfNDef
+    :param ifndeflines: the block of code inside the if not [an array of type Generable]
+    :param elselines: the block of code inside the else [an array of type Generable]
+    """
+    def __init__(self, condition, ifndeflines, elselines):
+        ifndefdef_line = Line('#ifndef %s' % condition)
+        if len(elselines):
+            elselines.insert(0, Line('#else'))
+        lines = [ifndefdef_line]+ifndeflines+elselines+[Line('#endif')]
+        super(IfNDef, self).__init__(lines)
+
+    mapper_method = "map_ifndef"
 
 
 class PrivateNamespace(Block):
