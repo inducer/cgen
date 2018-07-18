@@ -6,9 +6,15 @@ from setuptools import setup
 with open("README.rst", "rt") as inf:
     readme = inf.read()
 
+ver_dic = {}
+with open("cgen/version.py") as version_file:
+    version_file_contents = version_file.read()
+
+exec(compile(version_file_contents, "cgen/version.py", 'exec'), ver_dic)
+
 setup(
         name="cgen",
-        version="2017.1",
+        version=ver_dic["VERSION_TEXT"],
         description="C/C++ source generation from an AST",
         long_description=readme,
         classifiers=[
