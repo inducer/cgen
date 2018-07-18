@@ -174,6 +174,9 @@ class IdentityMapper(ASTMapper):
     def map_comment(self, node, *args, **kwargs):
         return node
 
+    def map_multiline_comment(self, node, *args, **kwargs):
+        return node
+
     def map_line_comment(self, node, *args, **kwargs):
         return node
 
@@ -206,6 +209,9 @@ class IdentityMapper(ASTMapper):
         return type(node)()
 
     def map_ifdef(self, node, *args, **kwargs):
+        return node
+
+    def map_ifndef(self, node, *args, **kwargs):
         return node
 
     def map_custom_loop(self, node, *args, **kwargs):
