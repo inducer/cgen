@@ -818,10 +818,10 @@ class Line(Generable):
 class Comment(Generable):
     def __init__(self, text, skip_space=False):
         self.text = text
-        if skip_space is False:
-            self.fmt_str = "/* %s */"
-        else:
+        if skip_space:
             self.fmt_str = "/*%s*/"
+        else:
+            self.fmt_str = "/* %s */"
 
     def generate(self):
         yield self.fmt_str % self.text
