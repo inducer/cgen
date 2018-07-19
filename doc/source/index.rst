@@ -12,7 +12,11 @@ This prints the following::
 
     char const *greet()
     {
+      #if (my_condition == true)
       return "hello world";
+      #else
+      return "bye world";
+      #endif
     }
 
 :mod:`cgen` deliberately does not worry about expression trees. Its sister

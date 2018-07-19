@@ -2,6 +2,7 @@ from cgen import (
         POD, Struct, FunctionBody, FunctionDeclaration,
         For, If, Assign, Value, Block, ArrayOf, Comment,
         Template)
+from cgen.preprocessor import Define
 import numpy as np
 import warnings
 import pytest
@@ -52,6 +53,24 @@ def test_preprocessor_classes_do_not_raise_deprecated_warning_when_imported_from
         warnings.simplefilter("always")
         a = cls(*args)
         assert len(warn) == 0
+
+
+@pytest.mark.parametrize('args, result', [
+    (('condition == true', [], []), """#if condition == true
+#endif"""),
+    (('condition == true', [Define('my_define', '')], []), """#if condition == true
+#define my_define
+#endif"""),
+    (('condition == true', [Define('if_define', '')], [Define('else_define', '')]), """#if condition == true
+#define if_define
+#else
+#define else_define
+#endif""")
+])
+def test_preprocessor_if_statement(args, result):
+    from cgen.preprocessor import If
+    assert str(If(*args)) == result
+
 
 
 def test_cgen():
