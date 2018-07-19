@@ -35,7 +35,10 @@ setup(
         license="MIT",
         url="http://documen.tician.de/cgen/",
 
-        packages=["cgen"],
+        packages=[
+            "cgen",
+            "cgen.preprocessor"
+        ],
         install_requires=[
             "pytools>=2015.1.2",
             "numpy>=1.6",

@@ -26,6 +26,18 @@ THE SOFTWARE.
 
 import numpy
 from pytools import memoize_method, memoize
+import warnings
+
+from cgen.preprocessor import Generable, Block, Collection, Comment, Line
+from cgen.preprocessor import Define as _Define
+from cgen.preprocessor import Include as _Include
+from cgen.preprocessor import Pragma as _Pragma
+from cgen.preprocessor import IfDef as _IfDef
+from cgen.preprocessor import IfNDef as _IfNDef
+
+
+warnings.simplefilter('always', DeprecationWarning)
+
 
 try:
     import pycuda._pvt_struct as _struct
@@ -71,18 +83,6 @@ def dtype_to_ctype(dtype):
         return "void"
     else:
         raise ValueError("unable to map dtype '%s'" % dtype)
-
-
-class Generable(object):
-    def __str__(self):
-        """Return a single string (possibly containing newlines) representing
-        this code construct."""
-        return "\n".join(l.rstrip() for l in self.generate())
-
-    def generate(self, with_semicolon=True):
-        """Generate (i.e. yield) the lines making up this code construct."""
-
-        raise NotImplementedError
 
 
 # {{{ declarators
@@ -739,39 +739,24 @@ def make_multiple_ifs(conditions_and_blocks, base=None):
 
 # {{{ simple statements
 
-class Define(Generable):
+preprocessor_deprecated_import = lambda c: c.__class__.__name__ + ' should be imported from \'preprocessor\' package, not from \'cgen\'.'
+
+class Define(_Define):
     def __init__(self, symbol, value):
-        self.symbol = symbol
-        self.value = value
-
-    def generate(self):
-        yield "#define %s %s" % (self.symbol, self.value)
-
-    mapper_method = "map_define"
+        warnings.warn(preprocessor_deprecated_import(self), category=DeprecationWarning)
+        super(Define, self).__init__(symbol, value)
 
 
-class Include(Generable):
+class Include(_Include):
     def __init__(self, filename, system=True):
-        self.filename = filename
-        self.system = system
-
-    def generate(self):
-        if self.system:
-            yield "#include <%s>" % self.filename
-        else:
-            yield "#include \"%s\"" % self.filename
-
-    mapper_method = "map_include"
+        warnings.warn(preprocessor_deprecated_import(self), category=DeprecationWarning)
+        super(Include, self).__init__(filename, system=system)
 
 
-class Pragma(Generable):
+class Pragma(_Pragma):
     def __init__(self, value):
-        self.value = value
-
-    def generate(self):
-        yield "#pragma %s" % (self.value)
-
-    mapper_method = "map_pragma"
+        warnings.warn(preprocessor_deprecated_import(self), category=DeprecationWarning)
+        super(Pragma, self).__init__(value)
 
 
 class Statement(Generable):
@@ -803,30 +788,6 @@ class Assign(Generable):
         yield "%s = %s;" % (self.lvalue, self.rvalue)
 
     mapper_method = "map_assignment"
-
-
-class Line(Generable):
-    def __init__(self, text=""):
-        self.text = text
-
-    def generate(self):
-        yield self.text
-
-    mapper_method = "map_line"
-
-
-class Comment(Generable):
-    def __init__(self, text, skip_space=False):
-        self.text = text
-        if skip_space:
-            self.fmt_str = "/*%s*/"
-        else:
-            self.fmt_str = "/* %s */"
-
-    def generate(self):
-        yield self.fmt_str % self.text
-
-    mapper_method = "map_comment"
 
 
 class MultilineComment(Generable):
@@ -954,38 +915,6 @@ class FunctionBody(Generable):
 
 # {{{ block
 
-class Block(Generable):
-    def __init__(self, contents=[]):
-        if(isinstance(contents, Block)):
-            contents = contents.contents
-        self.contents = contents[:]
-
-        for item in contents:
-            assert isinstance(item, Generable)
-
-    def generate(self):
-        yield "{"
-        for item in self.contents:
-            for item_line in item.generate():
-                yield "  " + item_line
-        yield "}"
-
-    def append(self, data):
-        self.contents.append(data)
-
-    def extend(self, data):
-        self.contents.extend(data)
-
-    def insert(self, i, data):
-        self.contents.insert(i, data)
-
-    def extend_log_block(self, descr, data):
-        self.contents.append(Comment(descr))
-        self.contents.extend(data)
-        self.contents.append(Line())
-
-    mapper_method = "map_block"
-
 
 def block_if_necessary(contents):
     if len(contents) == 1:
@@ -1035,49 +964,26 @@ class LiteralBlock(LiteralLines):
         yield "}"
 
 
-class Collection(Block):
-    def generate(self):
-        for c in self.contents:
-            for line in c.generate():
-                yield line
-
-
-Module = Collection
-
-
-class IfDef(Module):
-    """
-    Class to represent IfDef-Else-EndIf construct for the C preprocessor.
-    :param condition: the condition in IfDef
-    :param iflines: the block of code inside the if [an array of type Generable]
-    :param elselines: the block of code inside the else [an array of type Generable]
+class IfDef(_IfDef):
+    """Class to represent IfDef-Else-EndIf construct for the C preprocessor.
+    Note: This class should be imported from preprocessor package instead of cgen.
     """
     def __init__(self, condition, iflines, elselines):
-        ifdef_line = Line('#ifdef %s' % condition)
-        if len(elselines):
-            elselines.insert(0, Line('#else'))
-        endif_line = Line('#endif')
-        lines = [ifdef_line]+iflines+elselines+[endif_line]
-        super(IfDef, self).__init__(lines)
-
-    mapper_method = "map_ifdef"
+        warnings.warn(self.__class__.__name__ + ' should be imported from \'preprocessor\' package, not from \'cgen\'.',
+                      category=DeprecationWarning,
+                      stacklevel=1)
+        super(IfDef, self).__init__(condition, iflines, elselines)
 
 
-class IfNDef(Module):
-    """
-    Class to represent IfNDef-Else-EndIf construct for the C preprocessor.
-    :param condition: the condition in IfNDef
-    :param ifndeflines: the block of code inside the if not [an array of type Generable]
-    :param elselines: the block of code inside the else [an array of type Generable]
+class IfNDef(_IfNDef):
+    """Class to represent IfNDef-Else-EndIf construct for the C preprocessor.
+    Note: This class should be imported from preprocessor package instead of cgen.
     """
     def __init__(self, condition, ifndeflines, elselines):
-        ifndefdef_line = Line('#ifndef %s' % condition)
-        if len(elselines):
-            elselines.insert(0, Line('#else'))
-        lines = [ifndefdef_line]+ifndeflines+elselines+[Line('#endif')]
-        super(IfNDef, self).__init__(lines)
-
-    mapper_method = "map_ifndef"
+        warnings.warn(self.__class__.__name__ + ' should be imported from \'preprocessor\' package, not from \'cgen\'.',
+                      category=DeprecationWarning,
+                      stacklevel=1)
+        super(IfNDef, self).__init__(condition, ifndeflines, elselines)
 
 
 class PrivateNamespace(Block):

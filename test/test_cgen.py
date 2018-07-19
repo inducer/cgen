@@ -3,6 +3,55 @@ from cgen import (
         For, If, Assign, Value, Block, ArrayOf, Comment,
         Template)
 import numpy as np
+import warnings
+import pytest
+import importlib
+
+
+@pytest.mark.parametrize('cls', ['Generable',
+                                 'Block',
+                                 'Collection',
+                                 'Comment',
+                                 'Line',
+                                 'Define',
+                                 'Include',
+                                 'Pragma',
+                                 'IfDef',
+                                 'IfNDef'])
+def test_imports_from_cgen(cls):
+    module = __import__('cgen')
+    assert hasattr(module, cls)
+
+
+@pytest.mark.parametrize('cls, args', [('Define', ('define', 0)),
+                                       ('Include', ('include',)),
+                                       ('Pragma', ('pragma',)),
+                                       ('IfDef', ('', [], [])),
+                                       ('IfNDef', ('', [], []))])
+def test_preprocessor_classes_raise_deprecated_warning_when_imported_from_cgen(cls, args):
+    module = __import__('cgen')
+    cls = getattr(module, cls)
+    with warnings.catch_warnings(record=True) as warn:
+        warnings.simplefilter("always")
+        cls(*args)
+        assert len(warn) == 1
+        assert issubclass(warn[-1].category, DeprecationWarning)
+        assert cls.__name__ + ' should be imported from \'preprocessor\' package, not from \'cgen\'.' == str(
+            warn[0].message)
+
+
+@pytest.mark.parametrize('cls, args', [('Define', ('define', 0)),
+                                       ('Include', ('include',)),
+                                       ('Pragma', ('pragma',)),
+                                       ('IfDef', ('', [], [])),
+                                       ('IfNDef', ('', [], []))])
+def test_preprocessor_classes_do_not_raise_deprecated_warning_when_imported_from_preprocessor(cls, args):
+    module = __import__('cgen').preprocessor
+    cls = getattr(module, cls)
+    with warnings.catch_warnings(record=True) as warn:
+        warnings.simplefilter("always")
+        a = cls(*args)
+        assert len(warn) == 0
 
 
 def test_cgen():
