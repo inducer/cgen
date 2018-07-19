@@ -85,7 +85,7 @@ class Define(Generable):
     def generate(self):
         yield "#define %s %s" % (self.symbol, self.value)
 
-    mapper_method = "map_define"
+    mapper_method = "map_pp_define"
 
 
 class Include(Generable):
@@ -99,7 +99,7 @@ class Include(Generable):
         else:
             yield "#include \"%s\"" % self.filename
 
-    mapper_method = "map_include"
+    mapper_method = "map_pp_include"
 
 
 class Pragma(Generable):
@@ -109,7 +109,20 @@ class Pragma(Generable):
     def generate(self):
         yield "#pragma %s" % (self.value)
 
-    mapper_method = "map_pragma"
+    mapper_method = "map_pp_pragma"
+
+
+class If(Module):
+    """Class to represent If-Else-EndIf construct for the C preprocessor.
+    """
+    def __init__(self, condition, iflines, elselines):
+        if_line = Line('#if %s' % condition)
+        if len(elselines):
+            elselines.insert(0, Line('#else'))
+        lines = [if_line] + iflines + elselines + [Line('#endif')]
+        super(If, self).__init__(lines)
+
+    mapper_method = "map_pp_if"
 
 
 class IfDef(Module):
@@ -123,7 +136,7 @@ class IfDef(Module):
         lines = [ifdef_line] + iflines + elselines + [endif_line]
         super(IfDef, self).__init__(lines)
 
-    mapper_method = "map_ifdef"
+    mapper_method = "map_pp_ifdef"
 
 
 class IfNDef(Module):
@@ -136,4 +149,4 @@ class IfNDef(Module):
         lines = [ifndefdef_line] + ifndeflines + elselines + [Line('#endif')]
         super(IfNDef, self).__init__(lines)
 
-    mapper_method = "map_ifndef"
+    mapper_method = "map_pp_ifndef"
