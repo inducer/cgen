@@ -43,6 +43,12 @@ Preprocessor Code
 .. autoclass:: Pragma
     :show-inheritance:
 
+.. autoclass:: IfDef
+    :show-inheritance:
+
+.. autoclass:: IfNDef
+    :show-inheritance:
+
 Declarators
 -----------
 
