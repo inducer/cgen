@@ -1,4 +1,4 @@
-from infrastructure import Generable, Line, Module
+from cgen.infrastructure import Generable, Line, Module
 
 
 class Define(Generable):
