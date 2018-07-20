@@ -6,7 +6,6 @@ from cgen.preprocessor import Define
 import numpy as np
 import warnings
 import pytest
-import importlib
 
 
 @pytest.mark.parametrize('cls', ['Generable',
