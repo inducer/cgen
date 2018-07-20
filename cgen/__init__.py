@@ -28,7 +28,7 @@ import numpy
 from pytools import memoize_method, memoize
 import warnings
 
-from cgen.preprocessor import Generable, Block, Collection, Comment, Line
+from cgen.infrastructure import *
 from cgen.preprocessor import (Define as _Define,
                                Include as _Include,
                                Pragma as _Pragma,
