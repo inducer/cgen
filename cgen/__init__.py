@@ -965,9 +965,6 @@ class LiteralBlock(LiteralLines):
 
 
 class IfDef(_IfDef):
-    """Class to represent IfDef-Else-EndIf construct for the C preprocessor.
-    Note: This class should be imported from preprocessor package instead of cgen.
-    """
     def __init__(self, condition, iflines, elselines):
         warnings.warn(self.__class__.__name__ + ' should be imported from \'preprocessor\' package, not from \'cgen\'.',
                       category=DeprecationWarning,
@@ -976,9 +973,6 @@ class IfDef(_IfDef):
 
 
 class IfNDef(_IfNDef):
-    """Class to represent IfNDef-Else-EndIf construct for the C preprocessor.
-    Note: This class should be imported from preprocessor package instead of cgen.
-    """
     def __init__(self, condition, ifndeflines, elselines):
         warnings.warn(self.__class__.__name__ + ' should be imported from \'preprocessor\' package, not from \'cgen\'.',
                       category=DeprecationWarning,

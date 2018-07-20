@@ -37,9 +37,6 @@ class Pragma(Generable):
 
 
 class If(Module):
-    """Class to represent If-Else-EndIf construct for the C preprocessor.
-    """
-
     def __init__(self, condition, iflines, elselines):
         if_line = Line('#if %s' % condition)
         if len(elselines):
@@ -51,9 +48,6 @@ class If(Module):
 
 
 class IfDef(Module):
-    """Class to represent IfDef-Else-EndIf construct for the C preprocessor.
-    """
-
     def __init__(self, condition, iflines, elselines):
         ifdef_line = Line('#ifdef %s' % condition)
         if len(elselines):
@@ -66,9 +60,6 @@ class IfDef(Module):
 
 
 class IfNDef(Module):
-    """Class to represent IfNDef-Else-EndIf construct for the C preprocessor.
-    """
-
     def __init__(self, condition, ifndeflines, elselines):
         ifndefdef_line = Line('#ifndef %s' % condition)
         if len(elselines):
