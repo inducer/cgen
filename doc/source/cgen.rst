@@ -135,6 +135,13 @@ Statements
 .. autoclass:: While
     :show-inheritance:
 
+:mod:`cgen.preprocessor` -- Extensions to generate C-preprocessor Sources
+-------------------------------------------------------------------------
+
+.. automodule:: cgen.preprocessor
+   :members:
+
+
 :mod:`cgen.cuda` -- Extensions to generate CUDA-compatible C Sources
 ---------------------------------------------------------------------------
 
