@@ -29,11 +29,11 @@ from pytools import memoize_method, memoize
 import warnings
 
 from cgen.preprocessor import Generable, Block, Collection, Comment, Line
-from cgen.preprocessor import Define as _Define
-from cgen.preprocessor import Include as _Include
-from cgen.preprocessor import Pragma as _Pragma
-from cgen.preprocessor import IfDef as _IfDef
-from cgen.preprocessor import IfNDef as _IfNDef
+from cgen.preprocessor import (Define as _Define,
+                               Include as _Include,
+                               Pragma as _Pragma,
+                               IfDef as _IfDef,
+                               IfNDef as _IfNDef)
 
 
 warnings.simplefilter('always', DeprecationWarning)
