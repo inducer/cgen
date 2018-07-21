@@ -9,7 +9,7 @@ class Define(Generable):
     def generate(self):
         yield "#define %s %s" % (self.symbol, self.value)
 
-    mapper_method = "map_pp_define"
+    mapper_method = "map_define"
 
 
 class Include(Generable):
@@ -23,7 +23,7 @@ class Include(Generable):
         else:
             yield "#include \"%s\"" % self.filename
 
-    mapper_method = "map_pp_include"
+    mapper_method = "map_include"
 
 
 class Pragma(Generable):
@@ -33,7 +33,7 @@ class Pragma(Generable):
     def generate(self):
         yield "#pragma %s" % (self.value)
 
-    mapper_method = "map_pp_pragma"
+    mapper_method = "map_pragma"
 
 
 class If(Module):
@@ -56,7 +56,7 @@ class IfDef(Module):
         lines = [ifdef_line] + iflines + elselines + [endif_line]
         super(IfDef, self).__init__(lines)
 
-    mapper_method = "map_pp_ifdef"
+    mapper_method = "map_ifdef"
 
 
 class IfNDef(Module):
@@ -67,4 +67,4 @@ class IfNDef(Module):
         lines = [ifndefdef_line] + ifndeflines + elselines + [Line('#endif')]
         super(IfNDef, self).__init__(lines)
 
-    mapper_method = "map_pp_ifndef"
+    mapper_method = "map_ifndef"
