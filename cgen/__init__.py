@@ -36,9 +36,6 @@ from cgen.preprocessor import (Define as _Define,
                                IfNDef as _IfNDef)
 
 
-warnings.simplefilter('always', DeprecationWarning)
-
-
 try:
     import pycuda._pvt_struct as _struct
 except ImportError:
