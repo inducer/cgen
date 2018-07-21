@@ -147,13 +147,13 @@ class IdentityMapper(ASTMapper):
                 self.map_expression(node.condition, *args, **kwargs),
                 self.rec(node.body, *args, **kwargs))
 
-    def map_pp_define(self, node, *args, **kwargs):
+    def map_define(self, node, *args, **kwargs):
         return node
 
-    def map_pp_include(self, node, *args, **kwargs):
+    def map_include(self, node, *args, **kwargs):
         return node
 
-    def map_pp_pragma(self, node, *args, **kwargs):
+    def map_pragma(self, node, *args, **kwargs):
         return node
 
     def map_statement(self, node, *args, **kwargs):
@@ -211,10 +211,10 @@ class IdentityMapper(ASTMapper):
     def map_pp_if(self, node, *args, **kwargs):
         return node
 
-    def map_pp_ifdef(self, node, *args, **kwargs):
+    def map_ifdef(self, node, *args, **kwargs):
         return node
 
-    def map_pp_ifndef(self, node, *args, **kwargs):
+    def map_ifndef(self, node, *args, **kwargs):
         return node
 
     def map_custom_loop(self, node, *args, **kwargs):
