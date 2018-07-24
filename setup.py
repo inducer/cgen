@@ -30,8 +30,7 @@ setup(
         url="http://documen.tician.de/cgen/",
 
         packages=[
-            "cgen",
-            "cgen.preprocessor"
+            "cgen"
         ],
         install_requires=[
             "pytools>=2015.1.2",
