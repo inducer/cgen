@@ -811,7 +811,7 @@ class Increment(Generable):
         self.rvalue = rvalue
 
     def generate(self):
-        yield "%s += %s;" % (self.lvalue, self.rvalue)
+        yield "%s = %s + %s;" % (self.lvalue, self.lvalue, self.rvalue)
 
     mapper_method = "map_increment"
 
