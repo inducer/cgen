@@ -168,6 +168,11 @@ class IdentityMapper(ASTMapper):
                 self.map_expression(node.lvalue, *args, **kwargs),
                 self.map_expression(node.rvalue, *args, **kwargs))
 
+    def map_increment(self, node, *args, **kwargs):
+        return type(node)(
+                self.map_expression(node.lvalue, *args, **kwargs),
+                self.map_expression(node.rvalue, *args, **kwargs))
+
     def map_line(self, node, *args, **kwargs):
         return node
 
