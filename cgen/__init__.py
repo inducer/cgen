@@ -805,6 +805,17 @@ class Assign(Generable):
     mapper_method = "map_assignment"
 
 
+class Increment(Generable):
+    def __init__(self, lvalue, rvalue):
+        self.lvalue = lvalue
+        self.rvalue = rvalue
+
+    def generate(self):
+        yield "%s += %s;" % (self.lvalue, self.rvalue)
+
+    mapper_method = "map_increment"
+
+
 class Line(Generable):
     def __init__(self, text=""):
         self.text = text
