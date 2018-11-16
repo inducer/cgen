@@ -76,6 +76,7 @@ class IdentityMapper(ASTMapper):
 
     map_static = map_typedef
     map_const = map_typedef
+    map_volatile = map_typedef
 
     def map_extern(self, node, *args, **kwargs):
         return type(node)(node.language, self.rec(node.subdecl, *args, **kwargs))
