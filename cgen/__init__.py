@@ -240,6 +240,14 @@ class Const(NestedDeclarator):
     mapper_method = "map_const"
 
 
+class Volatile(NestedDeclarator):
+    def get_decl_pair(self):
+        sub_tp, sub_decl = self.subdecl.get_decl_pair()
+        return sub_tp, ("volatile %s" % sub_decl)
+
+    mapper_method = "map_volatile"
+
+
 class Extern(DeclSpecifier):
     def __init__(self, language, subdecl):
         self.language = language
