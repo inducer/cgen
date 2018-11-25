@@ -1,5 +1,15 @@
+cgen: An Abstract Syntax Tree for C, in Python
+----------------------------------------------
+
+.. image:: https://gitlab.tiker.net/inducer/cgen/badges/master/pipeline.svg
+   :target: https://gitlab.tiker.net/inducer/cgen/commits/master
+.. image:: https://badge.fury.io/py/cgen.png
+  :target: http://pypi.python.org/pypi/cgen
+
 cgen offers a simple abstract syntax tree for C and related languages
 (C++/CUDA/OpenCL) to allow structured code generation from Python.
+To represent mathematical expressions, cgen can be used with `pymbolic
+<https://github.com/inducer/pymbolic>`_.
 
 Places on the web related to cgen:
 
