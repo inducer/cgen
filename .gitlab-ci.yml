@@ -26,28 +26,14 @@ Python 2.7:
     reports:
       junit: test/pytest.xml
 
-Python 3.6:
+Python 3:
   script:
-  - export PY_EXE=python3.6
+  - export PY_EXE=python3
   - export EXTRA_INSTALL="numpy"
   - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/build-and-test-py-project.sh
   - ". ./build-and-test-py-project.sh"
   tags:
-  - python3.6
-  except:
-  - tags
-  artifacts:
-    reports:
-      junit: test/pytest.xml
-
-Python 3.7:
-  script:
-  - export PY_EXE=python3.7
-  - export EXTRA_INSTALL="numpy"
-  - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/build-and-test-py-project.sh
-  - ". ./build-and-test-py-project.sh"
-  tags:
-  - python3.7
+  - python3
   except:
   - tags
   artifacts:
