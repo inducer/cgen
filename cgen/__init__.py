@@ -1075,7 +1075,8 @@ class IfNDef(Module):
     """
     Class to represent IfNDef-Else-EndIf construct for the C preprocessor.
     :param condition: the condition in IfNDef
-    :param ifndeflines: the block of code inside the if not [an array of type Generable]
+    :param ifndeflines: the block of code inside the if not
+        [an array of type Generable]
     :param elselines: the block of code inside the else [an array of type Generable]
     """
     def __init__(self, condition, ifndeflines, elselines):
