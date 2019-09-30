@@ -272,7 +272,7 @@ class TemplateSpecializer(NestedDeclarator):
 class MaybeUnused(NestedDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("%s __attribute__ ((unused))" % sub_decl)
+        return sub_tp, ("(%s __attribute__ ((unused)))" % sub_decl)
 
     mapper_method = "map_maybe_unused"
 
@@ -296,6 +296,16 @@ class Pointer(NestedDeclarator):
 
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
+
+        if not isinstance(self.subdecl, (Pointer, POD, Value)):
+            # declarator might "change direction"
+            # (e.g. include an array declarator)
+            #
+            # Note that * binds less strongly than [], so these
+            # parentheses might not be necessary. Nonetheless,
+            # we insert them for clarity.
+            sub_decl = "(%s)" % sub_decl
+
         return sub_tp, ("*%s" % sub_decl)
 
     def struct_maker_code(self, data):
@@ -313,6 +323,16 @@ class Pointer(NestedDeclarator):
 class RestrictPointer(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
+
+        if not isinstance(self.subdecl, (Pointer, POD, Value)):
+            # declarator might "change direction"
+            # (e.g. include an array declarator)
+            #
+            # Note that * binds less strongly than [], so these
+            # parentheses might not be necessary. Nonetheless,
+            # we insert them for clarity.
+            sub_decl = "(%s)" % sub_decl
+
         return sub_tp, ("*__restrict__ %s" % sub_decl)
 
     mapper_method = "map_restrict_pointer"
@@ -321,6 +341,16 @@ class RestrictPointer(Pointer):
 class Reference(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
+
+        if not isinstance(self.subdecl, (Pointer, POD, Value)):
+            # declarator might "change direction"
+            # (e.g. include an array declarator)
+            #
+            # Note that * binds less strongly than [], so these
+            # parentheses might not be necessary. Nonetheless,
+            # we insert them for clarity.
+            sub_decl = "(%s)" % sub_decl
+
         return sub_tp, ("&%s" % sub_decl)
 
     mapper_method = "map_reference"
@@ -337,6 +367,12 @@ class ArrayOf(NestedDeclarator):
             count_str = ""
         else:
             count_str = str(self.count)
+
+        if not isinstance(self.subdecl, (POD, Value, ArrayOf)):
+            # declarator might "change direction"
+            # (e.g. include a pointer declarator)
+            sub_decl = "(%s)" % sub_decl
+
         return sub_tp, ("%s[%s]" % (sub_decl, count_str))
 
     def struct_maker_code(self, name):
