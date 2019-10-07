@@ -57,6 +57,7 @@ def test_ptr_to_array():
     t2 = Pointer(Pointer(ArrayOf(POD(np.float32, "yyy"), 2)))
     assert str(t2) == "float **(yyy[2]);"
 
+
 def test_ifndef_no_else():
     expected = """#ifndef SOME_DEFINE
 /* TRUE */
@@ -64,6 +65,7 @@ def test_ifndef_no_else():
 
     code = IfNDef("SOME_DEFINE", [Comment("TRUE")])
     assert str(code) == expected
+
 
 def test_ifndef():
     expected = """#ifndef SOME_DEFINE
@@ -75,6 +77,7 @@ def test_ifndef():
     code = IfNDef("SOME_DEFINE", [Comment("TRUE")], [Comment("FALSE")])
     assert str(code) == expected
 
+
 def test_ifdef_no_else():
     expected = """#ifdef SOME_DEFINE
 /* TRUE */
@@ -82,6 +85,7 @@ def test_ifdef_no_else():
 
     code = IfDef("SOME_DEFINE", [Comment("TRUE")])
     assert str(code) == expected
+
 
 def test_ifdef():
     expected = """#ifdef SOME_DEFINE
@@ -104,7 +108,6 @@ def test_define_with_val():
     expected = "#define SOME_DEFINE 42"
     code = Define("SOME_DEFINE", 42)
     assert str(code) == expected
-
 
 
 if __name__ == "__main__":
