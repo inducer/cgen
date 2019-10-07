@@ -3,7 +3,7 @@ import sys
 from cgen import (
         POD, Struct, FunctionBody, FunctionDeclaration,
         For, If, Assign, Value, Block, ArrayOf, Comment,
-        Template, Pointer)
+        Template, Pointer, IfNDef, IfDef, Define)
 import numpy as np
 
 
@@ -56,6 +56,55 @@ def test_ptr_to_array():
 
     t2 = Pointer(Pointer(ArrayOf(POD(np.float32, "yyy"), 2)))
     assert str(t2) == "float **(yyy[2]);"
+
+def test_ifndef_no_else():
+    expected = """#ifndef SOME_DEFINE
+/* TRUE */
+#endif"""
+
+    code = IfNDef("SOME_DEFINE", [Comment("TRUE")])
+    assert str(code) == expected
+
+def test_ifndef():
+    expected = """#ifndef SOME_DEFINE
+/* TRUE */
+#else
+/* FALSE */
+#endif"""
+
+    code = IfNDef("SOME_DEFINE", [Comment("TRUE")], [Comment("FALSE")])
+    assert str(code) == expected
+
+def test_ifdef_no_else():
+    expected = """#ifdef SOME_DEFINE
+/* TRUE */
+#endif"""
+
+    code = IfDef("SOME_DEFINE", [Comment("TRUE")])
+    assert str(code) == expected
+
+def test_ifdef():
+    expected = """#ifdef SOME_DEFINE
+/* TRUE */
+#else
+/* FALSE */
+#endif"""
+
+    code = IfDef("SOME_DEFINE", [Comment("TRUE")], [Comment("FALSE")])
+    assert str(code) == expected
+
+
+def test_define_no_val():
+    expected = "#define SOME_DEFINE"
+    code = Define("SOME_DEFINE")
+    assert str(code) == expected
+
+
+def test_define_with_val():
+    expected = "#define SOME_DEFINE 42"
+    code = Define("SOME_DEFINE", 42)
+    assert str(code) == expected
+
 
 
 if __name__ == "__main__":
