@@ -1,9 +1,7 @@
-import sys
-
 from cgen import (
         POD, Struct, FunctionBody, FunctionDeclaration,
         For, If, Assign, Value, Block, ArrayOf, Comment,
-        Template, Pointer)
+        Template)
 import numpy as np
 
 
@@ -48,19 +46,3 @@ def test_cgen():
     print(s)
     print(f_body)
     print(t_decl)
-
-
-def test_ptr_to_array():
-    t1 = Pointer(ArrayOf(Pointer(POD(np.float32, "xxx")), 2))
-    assert str(t1) == "float *((*xxx)[2]);"
-
-    t2 = Pointer(Pointer(ArrayOf(POD(np.float32, "yyy"), 2)))
-    assert str(t2) == "float **(yyy[2]);"
-
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        exec(sys.argv[1])
-    else:
-        from pytest import main
-        main([__file__])
