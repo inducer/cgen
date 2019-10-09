@@ -1,5 +1,4 @@
 import sys
-
 from cgen import (
         POD, Struct, FunctionBody, FunctionDeclaration,
         For, If, Assign, Value, Block, ArrayOf, Comment,
@@ -51,11 +50,8 @@ def test_cgen():
 
 
 def test_ptr_to_array():
-    t1 = Pointer(ArrayOf(Pointer(POD(np.float32, "xxx")), 2))
-    assert str(t1) == "float *((*xxx)[2]);"
-
     t2 = Pointer(Pointer(ArrayOf(POD(np.float32, "yyy"), 2)))
-    assert str(t2) == "float **(yyy[2]);"
+    assert str(t2) == "float **yyy[2];"
 
 
 def test_ifndef_no_else():
