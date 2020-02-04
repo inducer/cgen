@@ -34,7 +34,7 @@ except ImportError:
 
 
 @memoize
-def is_64_bit_platform():
+def is_long_64_bit():
     return _struct.calcsize('l') == 8
 
 
@@ -43,10 +43,16 @@ def dtype_to_ctype(dtype):
         raise ValueError("dtype may not be None")
 
     dtype = numpy.dtype(dtype)
-    if dtype == numpy.int64 and is_64_bit_platform():
-        return "long"
-    elif dtype == numpy.uint64 and is_64_bit_platform():
-        return "unsigned long"
+    if dtype == numpy.int64:
+        if is_long_64_bit():
+            return "long"
+        else:
+            return "long long"
+    elif dtype == numpy.uint64:
+        if is_long_64_bit():
+            return "unsigned long"
+        else:
+            return "unsigned long long"
     elif dtype == numpy.int32:
         return "int"
     elif dtype == numpy.uint32:
