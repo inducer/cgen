@@ -29,7 +29,7 @@ Python 3:
 Flake8:
   script:
   - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/master/prepare-and-run-flake8.sh
-  - ". ./prepare-and-run-flake8.sh modepy test"
+  - . ./prepare-and-run-flake8.sh "$CI_PROJECT_NAME" test
   tags:
   - python3
   except:
