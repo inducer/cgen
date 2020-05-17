@@ -83,7 +83,7 @@ class Generable(object):
     def __str__(self):
         """Return a single string (possibly containing newlines) representing
         this code construct."""
-        return "\n".join(l.rstrip() for l in self.generate())
+        return "\n".join(line.rstrip() for line in self.generate())
 
     def generate(self, with_semicolon=True):
         """Generate (i.e. yield) the lines making up this code construct."""
@@ -585,8 +585,8 @@ class Enum(Generable):
     @classmethod
     def generate(cls):
         yield cls.get_c_typedef_line()
-        for l in cls.get_c_defines_lines():
-            yield l
+        for line in cls.get_c_defines_lines():
+            yield line
 
     @classmethod
     def stringify_value(cls, val):
@@ -635,8 +635,8 @@ class If(Generable):
         condition_lines = cond_str.split("\n")
         if len(condition_lines) > 1:
             yield "if ("
-            for l in condition_lines:
-                yield "    "+l
+            for line in condition_lines:
+                yield "    "+line
             yield "  )"
         else:
             yield "if (%s)" % self.condition
