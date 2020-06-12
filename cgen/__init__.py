@@ -754,7 +754,7 @@ def make_multiple_ifs(conditions_and_blocks, base=None):
 # {{{ simple statements
 
 class Define(Generable):
-    def __init__(self, symbol, value):
+    def __init__(self, symbol, value=""):
         self.symbol = symbol
         self.value = value
 
@@ -1066,12 +1066,15 @@ class IfDef(Module):
     :param iflines: the block of code inside the if [an array of type Generable]
     :param elselines: the block of code inside the else [an array of type Generable]
     """
-    def __init__(self, condition, iflines, elselines):
+    def __init__(self, condition, iflines, elselines=None):
         ifdef_line = Line('#ifdef %s' % condition)
-        if len(elselines):
-            elselines.insert(0, Line('#else'))
-        endif_line = Line('#endif')
-        lines = [ifdef_line]+iflines+elselines+[endif_line]
+        lines = [ifdef_line] + iflines
+
+        if elselines:
+            lines += [Line('#else')]
+            lines += elselines
+
+        lines += [Line('#endif')]
         super(IfDef, self).__init__(lines)
 
     mapper_method = "map_ifdef"
@@ -1085,11 +1088,15 @@ class IfNDef(Module):
         [an array of type Generable]
     :param elselines: the block of code inside the else [an array of type Generable]
     """
-    def __init__(self, condition, ifndeflines, elselines):
+    def __init__(self, condition, ifndeflines, elselines=None):
         ifndefdef_line = Line('#ifndef %s' % condition)
-        if len(elselines):
-            elselines.insert(0, Line('#else'))
-        lines = [ifndefdef_line]+ifndeflines+elselines+[Line('#endif')]
+        lines = [ifndefdef_line] + ifndeflines
+
+        if elselines:
+            lines += [Line('#else')]
+            lines += elselines
+
+        lines += [Line('#endif')]
         super(IfNDef, self).__init__(lines)
 
     mapper_method = "map_ifndef"
