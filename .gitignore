@@ -12,5 +12,6 @@ setuptools.pth
 setuptools*.tar.gz
 distribute*egg
 distribute*tar.gz
+_build
 
 .cache
