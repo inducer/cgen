@@ -13,6 +13,9 @@
     :show-inheritance:
     :members: append, extend, extend_log_block
 
+.. autoclass:: Collection
+    :show-inheritance:
+
 .. autoclass:: Module
     :show-inheritance:
 
@@ -65,7 +68,7 @@ Declarators
 
 .. autoclass:: Enum
     :show-inheritance:
-    :members: stringify_value, get_typedef, get_c_defines, get_flag_names_and_values
+    :members: stringify_value, get_c_typedef, get_c_defines, get_flag_names_and_values
 
 Nested Declarators
 ------------------
@@ -119,6 +122,9 @@ Statements
     :show-inheritance:
 
 .. autofunction:: make_multiple_ifs
+
+.. autoclass:: Loop
+    :show-inheritance:
 
 .. autoclass:: DoWhile
     :show-inheritance:
@@ -185,10 +191,8 @@ Function Attributes
     :show-inheritance:
 
 .. autoclass:: CLWorkGroupSizeHint
-    :show-inheritance:
 
 .. autoclass:: CLRequiredWorkGroupSize
-    :show-inheritance:
 
 Vector PODs
 ^^^^^^^^^^^
