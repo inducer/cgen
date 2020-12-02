@@ -26,31 +26,31 @@ from __future__ import absolute_import
 # ---------------------
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
-# coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
+# coming with Sphinx (named "sphinx.ext.*") or your custom ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.coverage',
-    'sphinx.ext.mathjax',
-    #'sphinx.ext.viewcode'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.coverage",
+    "sphinx.ext.mathjax",
+    #"sphinx.ext.viewcode"
     ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # The encoding of source files.
-#source_encoding = 'utf-8'
+#source_encoding = "utf-8"
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
-project = u'cgen'
-copyright = u'2011, Andreas Kloeckner'
+project = u"cgen"
+copyright = u"2011, Andreas Kloeckner"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -58,7 +58,8 @@ copyright = u'2011, Andreas Kloeckner'
 #
 # The short X.Y version.
 ver_dic = {}
-exec(compile(open("../cgen/version.py").read(), "../cgen/version.py", 'exec'), ver_dic)
+exec(compile(open("../cgen/version.py").read(), "../cgen/version.py", "exec"),
+        ver_dic)
 version = ".".join(str(x) for x in ver_dic["VERSION"])
 # The full version, including alpha/beta/rc tags.
 release = ver_dic["VERSION_TEXT"]
@@ -75,7 +76,7 @@ release = ver_dic["VERSION_TEXT"]
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ["_build"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -92,34 +93,24 @@ exclude_patterns = ['_build']
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 
 # Options for HTML output
 # -----------------------
 
-html_theme = "alabaster"
+html_theme = "furo"
 
 html_theme_options = {
-        "extra_nav_links": {
-            "🚀 Github": "https://github.com/inducer/cgen",
-            "💾 Download Releases": "https://pypi.python.org/pypi/cgen",
-            }
         }
 
 html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'relations.html',
-        'searchbox.html',
-    ]
-}
+        }
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
-#html_style = 'default.css'
+#html_style = "default.css"
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -142,7 +133,7 @@ html_sidebars = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
 
-# If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
+# If not '', a "Last updated on:" timestamp is inserted at every page bottom,
 # using the given strftime format.
 #html_last_updated_fmt = '%b %d, %Y'
 
@@ -178,23 +169,23 @@ html_sidebars = {
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'cgendoc'
+htmlhelp_basename = "cgendoc"
 
 
 # Options for LaTeX output
 # ------------------------
 
-# The paper size ('letter' or 'a4').
-#latex_paper_size = 'letter'
+# The paper size ("letter" or "a4").
+#latex_paper_size = "letter"
 
-# The font size ('10pt', '11pt' or '12pt').
-#latex_font_size = '10pt'
+# The font size ("10pt", "11pt" or "12pt").
+#latex_font_size = "10pt"
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'cgen.tex', u'cgen Documentation',
-   u'Andreas Kloeckner', 'manual'),
+        ("index", "cgen.tex", u"cgen Documentation",
+            u"Andreas Kloeckner", "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -219,8 +210,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'cgen', u'cgen Documentation',
-     [u'Andreas Kloeckner'], 1)
+    ("index", "cgen", u"cgen Documentation",
+     [u"Andreas Kloeckner"], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -232,9 +223,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'cgen', u'cgen Documentation',
-   u'Andreas Kloeckner', 'cgen', 'One line description of project.',
-   'Miscellaneous'),
+        ("index", "cgen", u"cgen Documentation",
+            u"Andreas Kloeckner", "cgen", "One line description of project.",
+            "Miscellaneous"),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -243,13 +234,13 @@ texinfo_documents = [
 # If false, no module index is generated.
 #texinfo_domain_indices = True
 
-# How to display URL addresses: 'footnote', 'no', or 'inline'.
-#texinfo_show_urls = 'footnote'
+# How to display URL addresses: "footnote", "no", or "inline".
+#texinfo_show_urls = "footnote"
 
 autoclass_content = "both"
 
 intersphinx_mapping = {
-        'http://docs.python.org/dev': None,
-        'http://docs.scipy.org/doc/numpy/': None,
-        'http://documen.tician.de/pymbolic/': None,
+        "https://docs.python.org/3/": None,
+        "https://numpy.org/doc/stable/": None,
+        "https://documen.tician.de/pymbolic/": None,
         }

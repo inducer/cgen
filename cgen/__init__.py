@@ -35,7 +35,7 @@ except ImportError:
 
 @memoize
 def is_long_64_bit():
-    return _struct.calcsize('l') == 8
+    return _struct.calcsize("l") == 8
 
 
 def dtype_to_ctype(dtype):
@@ -197,7 +197,7 @@ class NestedDeclarator(Declarator):
 
 
 class DeclSpecifier(NestedDeclarator):
-    def __init__(self, subdecl, spec, sep=' '):
+    def __init__(self, subdecl, spec, sep=" "):
         NestedDeclarator.__init__(self, subdecl)
         self.spec = spec
         self.sep = sep
@@ -219,7 +219,7 @@ class DeclSpecifier(NestedDeclarator):
 
 class NamespaceQualifier(DeclSpecifier):
     def __init__(self, namespace, subdecl):
-        DeclSpecifier.__init__(self, subdecl, namespace, '::')
+        DeclSpecifier.__init__(self, subdecl, namespace, "::")
 
     mapper_method = "map_namespace_qualifier"
 
@@ -257,7 +257,7 @@ class Volatile(NestedDeclarator):
 class Extern(DeclSpecifier):
     def __init__(self, language, subdecl):
         self.language = language
-        super(Extern, self).__init__(subdecl, "extern \"%s\"" % language)
+        super(Extern, self).__init__(subdecl, 'extern "%s"' % language)
 
     mapper_method = "map_extern"
 
@@ -269,7 +269,7 @@ class TemplateSpecializer(NestedDeclarator):
 
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        sub_tp[-1] = sub_tp[-1] + '<%s>' % self.specializer
+        sub_tp[-1] = sub_tp[-1] + "<%s>" % self.specializer
         return sub_tp, sub_decl
 
     mapper_method = "map_template_specializer"
@@ -532,7 +532,7 @@ class GenerableStruct(Struct):
 
 class Enum(Generable):
     """An enum-like class for Python that can generate an equivalent C-level
-    declaration. Does not work within the usual 'declarator' framework
+    declaration. Does not work within the usual "declarator" framework
     because it uses macros to define values, and a separate typedef to define the
     value type.
 
@@ -590,7 +590,7 @@ class Enum(Generable):
 
     @classmethod
     def stringify_value(cls, val):
-        "Return a string description of the flags set in *val*."
+        """Return a string description of the flags set in *val*."""
 
         return "|".join(
                 flag_name
@@ -773,7 +773,7 @@ class Include(Generable):
         if self.system:
             yield "#include <%s>" % self.filename
         else:
-            yield "#include \"%s\"" % self.filename
+            yield '#include "%s"' % self.filename
 
     mapper_method = "map_include"
 
@@ -849,11 +849,11 @@ class MultilineComment(Generable):
         self.skip_space = skip_space
 
     def generate(self):
-        yield '/**'
+        yield "/**"
         if self.skip_space is True:
-            line_begin, comment_end = '*', '*/'
+            line_begin, comment_end = "*", "*/"
         else:
-            line_begin, comment_end = ' * ', ' */'
+            line_begin, comment_end = " * ", " */"
         for line in self.text.splitlines():
             yield line_begin + line
         yield comment_end
@@ -922,7 +922,7 @@ class InlineInitializer(Initializer):
     def generate(self):
         result = super(InlineInitializer, self).generate()
         for v in result:
-            if v.endswith(';'):
+            if v.endswith(";"):
                 yield v[:-1]
             else:
                 yield v
@@ -1067,10 +1067,10 @@ class IfDef(Module):
     :param elselines: the block of code inside the else [an array of type Generable]
     """
     def __init__(self, condition, iflines, elselines):
-        ifdef_line = Line('#ifdef %s' % condition)
+        ifdef_line = Line("#ifdef %s" % condition)
         if len(elselines):
-            elselines.insert(0, Line('#else'))
-        endif_line = Line('#endif')
+            elselines.insert(0, Line("#else"))
+        endif_line = Line("#endif")
         lines = [ifdef_line]+iflines+elselines+[endif_line]
         super(IfDef, self).__init__(lines)
 
@@ -1086,10 +1086,10 @@ class IfNDef(Module):
     :param elselines: the block of code inside the else [an array of type Generable]
     """
     def __init__(self, condition, ifndeflines, elselines):
-        ifndefdef_line = Line('#ifndef %s' % condition)
+        ifndefdef_line = Line("#ifndef %s" % condition)
         if len(elselines):
-            elselines.insert(0, Line('#else'))
-        lines = [ifndefdef_line]+ifndeflines+elselines+[Line('#endif')]
+            elselines.insert(0, Line("#else"))
+        lines = [ifndefdef_line]+ifndeflines+elselines+[Line("#endif")]
         super(IfNDef, self).__init__(lines)
 
     mapper_method = "map_ifndef"
@@ -1107,7 +1107,7 @@ class PrivateNamespace(Block):
 
         for c in self.contents:
             for line in c.generate():
-                checksum.update(line.encode('utf-8'))
+                checksum.update(line.encode("utf-8"))
 
         return "private_namespace_"+checksum.hexdigest()
 

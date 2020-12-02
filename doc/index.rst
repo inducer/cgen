@@ -27,6 +27,8 @@ Contents
 
     cgen
     faq
+    🚀 Github <https://github.com/inducer/cgen>
+    💾 Download Releases <https://pypi.python.org/pypi/cgen>
 
 Indices and tables
 ==================
