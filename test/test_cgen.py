@@ -38,10 +38,10 @@ def test_cgen():
         #BlankLine(),
         Comment("all done"),
         ]))
-    t_decl = Template('typename T',
-                      FunctionDeclaration(Value('CUdeviceptr', 'scan'),
-                                          [Value('CUdeviceptr', 'inputPtr'),
-                                           Value('int', 'length')]))
+    t_decl = Template("typename T",
+                      FunctionDeclaration(Value("CUdeviceptr", "scan"),
+                                          [Value("CUdeviceptr", "inputPtr"),
+                                           Value("int", "length")]))
 
     print(s)
     print(f_body)
