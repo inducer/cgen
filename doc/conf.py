@@ -99,17 +99,13 @@ pygments_style = "sphinx"
 # Options for HTML output
 # -----------------------
 
-html_theme = "alabaster"
+html_theme = "furo"
 
 html_theme_options = {
-        "extra_nav_links": {
-            "🚀 Github": "https://github.com/inducer/cgen",
-            "💾 Download Releases": "https://pypi.python.org/pypi/cgen",
-            }
         }
 
 html_sidebars = {
-}
+        }
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
@@ -245,6 +241,6 @@ autoclass_content = "both"
 
 intersphinx_mapping = {
         "https://docs.python.org/3/": None,
-        "https://docs.scipy.org/doc/numpy/": None,
+        "https://numpy.org/doc/stable/": None,
         "https://documen.tician.de/pymbolic/": None,
         }
