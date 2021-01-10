@@ -1,5 +1,3 @@
-from __future__ import division
-
 __copyright__ = "Copyright (C) 2015 Andreas Kloeckner"
 
 __license__ = """
@@ -81,6 +79,6 @@ class ISPCLaunch(Generable):
         else:
             launch_spec = ""
 
-        yield "launch%s %s;" % (launch_spec, self.expr)
+        yield f"launch{launch_spec} {self.expr};"
 
     mapper_method = "map_ispc_launch"

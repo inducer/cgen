@@ -1,6 +1,5 @@
 """Generator for C/C++."""
 
-from __future__ import division, absolute_import, print_function
 
 __copyright__ = "Copyright (C) 2016 Andreas Kloeckner"
 
@@ -29,7 +28,7 @@ class UnsupportedNodeError(ValueError):
     pass
 
 
-class ASTMapper(object):
+class ASTMapper:
     def __call__(self, node, *args, **kwargs):
         """Dispatch *node* to its corresponding mapper method. Pass on
         ``*args`` and ``**kwargs`` unmodified.
@@ -55,7 +54,7 @@ class ASTMapper(object):
         """
 
         raise UnsupportedNodeError(
-                "%s cannot handle nodes of type %s" % (
+                "{} cannot handle nodes of type {}".format(
                     type(self), type(node)))
 
     rec = __call__

@@ -1,6 +1,5 @@
 """Generator for C/C++."""
 
-from __future__ import division, absolute_import, print_function
 
 __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
@@ -79,7 +78,7 @@ def dtype_to_ctype(dtype):
         raise ValueError("unable to map dtype '%s'" % dtype)
 
 
-class Generable(object):
+class Generable:
     def __str__(self):
         """Return a single string (possibly containing newlines) representing
         this code construct."""
@@ -97,15 +96,14 @@ class Declarator(Generable):
     def generate(self, with_semicolon=True):
         tp_lines, tp_decl = self.get_decl_pair()
         tp_lines = list(tp_lines)
-        for line in tp_lines[:-1]:
-            yield line
+        yield from tp_lines[:-1]
         sc = ";"
         if not with_semicolon:
             sc = ""
         if tp_decl is None:
-            yield "%s%s" % (tp_lines[-1], sc)
+            yield "{}{}".format(tp_lines[-1], sc)
         else:
-            yield "%s %s%s" % (tp_lines[-1], tp_decl, sc)
+            yield "{} {}{}".format(tp_lines[-1], tp_decl, sc)
 
     def get_decl_pair(self):
         """Return a tuple ``(type_lines, rhs)``.
@@ -123,7 +121,7 @@ class Declarator(Generable):
         if tp_decl is None:
             return tp_lines
         else:
-            return "%s %s" % (tp_lines, tp_decl)
+            return f"{tp_lines} {tp_decl}"
 
 
 class POD(Declarator):
@@ -206,12 +204,11 @@ class DeclSpecifier(NestedDeclarator):
         def add_spec(sub_it):
             it = iter(sub_it)
             try:
-                yield "%s%s%s" % (self.spec, self.sep, next(it))
+                yield "{}{}{}".format(self.spec, self.sep, next(it))
             except StopIteration:
                 pass
 
-            for line in it:
-                yield line
+            yield from it
 
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return add_spec(sub_tp), sub_decl
@@ -257,7 +254,7 @@ class Volatile(NestedDeclarator):
 class Extern(DeclSpecifier):
     def __init__(self, language, subdecl):
         self.language = language
-        super(Extern, self).__init__(subdecl, 'extern "%s"' % language)
+        super().__init__(subdecl, 'extern "%s"' % language)
 
     mapper_method = "map_extern"
 
@@ -285,7 +282,7 @@ class MaybeUnused(NestedDeclarator):
 
 class AlignedAttribute(NestedDeclarator):
     def __init__(self, align_bytes, subdecl):
-        super(AlignedAttribute, self).__init__(subdecl)
+        super().__init__(subdecl)
         self.align_bytes = align_bytes
 
     def get_decl_pair(self):
@@ -343,7 +340,7 @@ class ArrayOf(NestedDeclarator):
             count_str = ""
         else:
             count_str = str(self.count)
-        return sub_tp, ("%s[%s]" % (sub_decl, count_str))
+        return sub_tp, (f"{sub_decl}[{count_str}]")
 
     def struct_maker_code(self, name):
         return ", ".join("%s[%d]" % (name, i) for i in range(self.count))
@@ -371,7 +368,7 @@ class FunctionDeclaration(NestedDeclarator):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
 
-        return sub_tp, ("%s(%s)" % (
+        return sub_tp, ("{}({})".format(
             sub_decl,
             ", ".join(ad.inline() for ad in self.arg_decls)))
 
@@ -507,11 +504,11 @@ class GenerableStruct(Struct):
     def _maker(self, with_defaults=False):
         def format_arg(f):
             if with_defaults:
-                return "%s=%s" % (f.name, repr(f.default_value()))
+                return "{}={}".format(f.name, repr(f.default_value()))
             else:
                 return f.name
 
-        code = "lambda pack, %s: pack(%s, %s)" % (
+        code = "lambda pack, {}: pack({}, {})".format(
                 ", ".join(format_arg(f) for f in self.fields),
                 repr(self.struct_format()),
                 ", ".join(f.struct_maker_code(f.name) for f in self.fields))
@@ -576,7 +573,7 @@ class Enum(Generable):
         """Returns a typedef to define this enum in C."""
 
         from pyopencl.tools import dtype_to_ctype
-        return "typedef %s %s;" % (dtype_to_ctype(cls.dtype), cls.c_name)
+        return "typedef {} {};".format(dtype_to_ctype(cls.dtype), cls.c_name)
 
     @classmethod
     def get_c_typedef(cls):
@@ -585,8 +582,7 @@ class Enum(Generable):
     @classmethod
     def generate(cls):
         yield cls.get_c_typedef_line()
-        for line in cls.get_c_defines_lines():
-            yield line
+        yield from cls.get_c_defines_lines()
 
     @classmethod
     def stringify_value(cls, val):
@@ -609,8 +605,7 @@ class Template(NestedDeclarator):
 
     def generate(self, with_semicolon=False):
         yield "template <%s>" % self.template_spec
-        for i in self.subdecl.generate(with_semicolon):
-            yield i
+        yield from self.subdecl.generate(with_semicolon)
 
     mapper_method = "map_template"
 
@@ -719,7 +714,7 @@ class For(Loop):
         self.body = body
 
     def intro_line(self):
-        return "for (%s; %s; %s)" % (self.start, self.condition, self.update)
+        return f"for ({self.start}; {self.condition}; {self.update})"
 
     mapper_method = "map_for"
 
@@ -759,7 +754,7 @@ class Define(Generable):
         self.value = value
 
     def generate(self):
-        yield "#define %s %s" % (self.symbol, self.value)
+        yield f"#define {self.symbol} {self.value}"
 
     mapper_method = "map_define"
 
@@ -814,7 +809,7 @@ class Assign(Generable):
         self.rvalue = rvalue
 
     def generate(self):
-        yield "%s = %s;" % (self.lvalue, self.rvalue)
+        yield f"{self.lvalue} = {self.rvalue};"
 
     mapper_method = "map_assignment"
 
@@ -896,18 +891,17 @@ class Initializer(Generable):
     def generate(self):
         tp_lines, tp_decl = self.vdecl.get_decl_pair()
         tp_lines = list(tp_lines)
-        for line in tp_lines[:-1]:
-            yield line
+        yield from tp_lines[:-1]
         if isinstance(self.data, str) and "\n" in self.data:
             data_lines = self.data.split("\n")
-            yield "%s %s =" % (tp_lines[-1], tp_decl)
+            yield "{} {} =".format(tp_lines[-1], tp_decl)
             for i, l in enumerate(data_lines):
                 if i == len(data_lines)-1:
                     yield "  %s;" % l
                 else:
                     yield "  %s" % l
         else:
-            yield "%s %s = %s;" % (tp_lines[-1], tp_decl, self.data)
+            yield "{} {} = {};".format(tp_lines[-1], tp_decl, self.data)
 
     mapper_method = "map_initializer"
 
@@ -920,7 +914,7 @@ class InlineInitializer(Initializer):
     Result: same as cgen.Initializer except for the lack of a semi-colon at the end
     """
     def generate(self):
-        result = super(InlineInitializer, self).generate()
+        result = super().generate()
         for v in result:
             if v.endswith(";"):
                 yield v[:-1]
@@ -938,8 +932,7 @@ class ArrayInitializer(Generable):
         self.data = data
 
     def generate(self):
-        for v_line in self.vdecl.generate(with_semicolon=False):
-            yield v_line
+        yield from self.vdecl.generate(with_semicolon=False)
         yield "  = { %s };" % (", ".join(str(item) for item in self.data))
 
     mapper_method = "map_array_initializer"
@@ -956,10 +949,8 @@ class FunctionBody(Generable):
         self.body = body
 
     def generate(self):
-        for f_line in self.fdecl.generate(with_semicolon=False):
-            yield f_line
-        for b_line in self.body.generate():
-            yield b_line
+        yield from self.fdecl.generate(with_semicolon=False)
+        yield from self.body.generate()
 
     mapper_method = "map_function_body"
 
@@ -1035,8 +1026,7 @@ class LiteralLines(Generable):
         self.lines = [line[base_indent:] for line in lines]
 
     def generate(self):
-        for line in self.lines:
-            yield line
+        yield from self.lines
 
     mapper_method = "map_literal_lines"
 
@@ -1052,8 +1042,7 @@ class LiteralBlock(LiteralLines):
 class Collection(Block):
     def generate(self):
         for c in self.contents:
-            for line in c.generate():
-                yield line
+            yield from c.generate()
 
 
 Module = Collection
@@ -1072,7 +1061,7 @@ class IfDef(Module):
             elselines.insert(0, Line("#else"))
         endif_line = Line("#endif")
         lines = [ifdef_line]+iflines+elselines+[endif_line]
-        super(IfDef, self).__init__(lines)
+        super().__init__(lines)
 
     mapper_method = "map_ifdef"
 
@@ -1090,7 +1079,7 @@ class IfNDef(Module):
         if len(elselines):
             elselines.insert(0, Line("#else"))
         lines = [ifndefdef_line]+ifndeflines+elselines+[Line("#endif")]
-        super(IfNDef, self).__init__(lines)
+        super().__init__(lines)
 
     mapper_method = "map_ifndef"
 
