@@ -1,5 +1,3 @@
-from __future__ import division, absolute_import
-
 __copyright__ = "Copyright (C) 2011-20 Andreas Kloeckner"
 
 __license__ = """
@@ -125,11 +123,11 @@ class CLVecTypeHint(NestedDeclarator):
         else:
             self.type_str = type_str
 
-        super(CLVecTypeHint, self).__init__(subdecl)
+        super().__init__(subdecl)
 
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("__attribute__ ((vec_type_hint(%s))) %s" % (
+        return sub_tp, ("__attribute__ ((vec_type_hint({}))) {}".format(
             sub_decl, self.type_str))
 
     mapper_method = "map_cl_vec_type_hint"
@@ -151,7 +149,7 @@ class CLWorkGroupSizeHint(_CLWorkGroupSizeDeclarator):
     """
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("__attribute__ ((work_group_size_hint(%s))) %s" % (
+        return sub_tp, ("__attribute__ ((work_group_size_hint({}))) {}".format(
             ", ".join(str(d) for d in self.dim), sub_decl))
 
     mapper_method = "map_cl_workgroup_size_hint"
@@ -163,7 +161,7 @@ class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
     """
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("__attribute__ ((reqd_work_group_size(%s))) %s" % (
+        return sub_tp, ("__attribute__ ((reqd_work_group_size({}))) {}".format(
             ", ".join(str(d) for d in self.dim), sub_decl))
 
     mapper_method = "map_cl_required_wokgroup_size"
