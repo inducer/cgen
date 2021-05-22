@@ -49,9 +49,7 @@ pygments_style = "sphinx"
 
 html_theme = "furo"
 
-
 autoclass_content = "class"
-autodoc_typehints = "description"
 
 intersphinx_mapping = {
         "https://docs.python.org/3/": None,
