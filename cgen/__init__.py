@@ -426,7 +426,7 @@ class Struct(Declarator):
 
 class GenerableStruct(Struct):
     def __init__(self, tpname, fields, declname=None,
-            align_bytes=None, aligned_prime_to=[]):
+            align_bytes=None, aligned_prime_to=None):
         """Initialize a structure declarator.
         *tpname* is the name of the structure, while *declname* is the
         name used for the declarator. *pad_bytes* is the number of
@@ -441,6 +441,8 @@ class GenerableStruct(Struct):
         numbers in *aligned_prime_to*. (Sounds obscure? It's needed
         for avoiding bank conflicts in CUDA programming.)
         """
+        if aligned_prime_to is None:
+            aligned_prime_to = []
 
         format = "".join(f.struct_format() for f in fields)
         bytes = _struct.calcsize(format)
@@ -960,7 +962,9 @@ class FunctionBody(Generable):
 # {{{ block
 
 class Block(Generable):
-    def __init__(self, contents=[]):
+    def __init__(self, contents=None):
+        if contents is None:
+            contents = []
         if(isinstance(contents, Block)):
             contents = contents.contents
         self.contents = contents[:]
@@ -1002,7 +1006,8 @@ def block_if_necessary(contents):
 class LiteralLines(Generable):
     def __init__(self, text):
         # accommodate pyopencl syntax highlighting
-        text = text.lstrip("//CL//")
+        if text.startswith("//CL//"):
+            text = text[6:]
 
         if not text.startswith("\n"):
             raise ValueError("expected newline as first character "
