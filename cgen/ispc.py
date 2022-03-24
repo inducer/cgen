@@ -54,7 +54,7 @@ class ISPCTask(DeclSpecifier):
 class ISPCVaryingPointer(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("*varying %s" % sub_decl)
+        return sub_tp, f"*varying {sub_decl}"
 
     mapper_method = "map_ispc_varying_pointer"
 
@@ -62,7 +62,7 @@ class ISPCVaryingPointer(Pointer):
 class ISPCUniformPointer(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("*uniform %s" % sub_decl)
+        return sub_tp, f"*uniform {sub_decl}"
 
     mapper_method = "map_ispc_uniform_pointer"
 
@@ -74,8 +74,7 @@ class ISPCLaunch(Generable):
 
     def generate(self):
         if self.grid:
-            launch_spec = "[%s]" % ", ".join(
-                    str(gs_i) for gs_i in self.grid)
+            launch_spec = "[{}]".format(", ".join(str(gs_i) for gs_i in self.grid))
         else:
             launch_spec = ""
 

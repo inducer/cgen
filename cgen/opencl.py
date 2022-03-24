@@ -53,7 +53,7 @@ def dtype_to_cltype(dtype):
     elif dtype == np.float64:
         return "double"
     else:
-        raise ValueError("unable to map dtype '%s'" % dtype)
+        raise ValueError(f"unable to map dtype '{dtype}'")
 
 
 # {{{ kernel
@@ -99,7 +99,7 @@ class CLImage(Value):
         else:
             raise ValueError("mode must be one of 'r' or 'w'")
 
-        Value.__init__(self, "%s image%dd_t" % (spec, dims), name)
+        Value.__init__(self, f"{spec} image{dims}d_t", name)
 
     mapper_method = "map_cl_image"
 

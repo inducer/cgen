@@ -53,7 +53,7 @@ class CudaConstant(DeclSpecifier):
 class CudaRestrictPointer(Pointer):
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("*__restrict__ %s" % sub_decl)
+        return sub_tp, f"*__restrict__ {sub_decl}"
 
     mapper_method = "map_cuda_restrict_pointer"
 
@@ -69,7 +69,7 @@ class CudaLaunchBounds(NestedDeclarator):
         if self.min_blocks_per_mp is not None:
             lb = f"{self.max_threads_per_block}, {self.min_blocks_per_mp}"
         else:
-            lb = "%s" % (self.max_threads_per_block)
+            lb = f"{self.max_threads_per_block}"
 
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"__launch_bounds__({lb}) {sub_decl}"
