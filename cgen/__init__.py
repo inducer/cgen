@@ -23,6 +23,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import Any
+
 import numpy
 from pytools import memoize_method, memoize
 
@@ -113,6 +115,7 @@ class Declarator(Generable):
         hand side that actually contains the function/array/constness notation
         making up the bulk of the declarator syntax.
         """
+        raise NotImplementedError
 
     def inline(self, with_semicolon=True):
         """Return the declarator as a single line."""
@@ -459,9 +462,9 @@ class GenerableStruct(Struct):
         padded_bytes = ((bytes + align_bytes - 1) // align_bytes) * align_bytes
 
         def satisfies_primality(n):
-            from pymbolic.algorithm import gcd
+            import math
             for p in aligned_prime_to:
-                if gcd(n, p) != 1:
+                if math.gcd(n, p) != 1:
                     return False
             return True
 
@@ -551,6 +554,10 @@ class Enum(Generable):
         enum value.
     """
 
+    c_name: str
+    dtype: "numpy.dtype[Any]"
+    c_value_prefix: str
+
     @classmethod
     def get_flag_names_and_values(cls):
         return [(name, getattr(cls, name))
@@ -574,7 +581,7 @@ class Enum(Generable):
     def get_c_typedef_line(cls):
         """Returns a typedef to define this enum in C."""
 
-        from pyopencl.tools import dtype_to_ctype
+        from pyopencl.tools import dtype_to_ctype   # pylint: disable=import-error
         return "typedef {} {};".format(dtype_to_ctype(cls.dtype), cls.c_name)
 
     @classmethod
@@ -660,6 +667,9 @@ class If(Generable):
 class Loop(Generable):
     def __init__(self, body):
         self.body = body
+
+    def intro_line(self):
+        raise NotImplementedError
 
     def generate(self):
         if self.intro_line() is not None:

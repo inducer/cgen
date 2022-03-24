@@ -61,6 +61,9 @@ class ASTMapper:
 
 
 class IdentityMapper(ASTMapper):
+    def map_expression(self, node, *args, **kwargs):
+        raise NotImplementedError
+
     def map_pod(self, node, *args, **kwargs):
         return type(node)(node.dtype, node.name)
 
