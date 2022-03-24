@@ -3,7 +3,7 @@ Python 3:
   - export PY_EXE=python3
   - export EXTRA_INSTALL="numpy"
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
-  - ". ./build-and-test-py-project.sh"
+  - . ./build-and-test-py-project.sh
   tags:
   - python3
   except:
@@ -15,7 +15,7 @@ Python 3:
 Documentation:
   script:
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-docs.sh
-  - ". ./build-docs.sh"
+  - . ./build-docs.sh
   tags:
   - linux
 
@@ -23,6 +23,15 @@ Flake8:
   script:
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-flake8.sh
   - . ./prepare-and-run-flake8.sh "$CI_PROJECT_NAME" test
+  tags:
+  - python3
+  except:
+  - tags
+
+Pylint:
+  script:
+  - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
+  - . ./prepare-and-run-pylint.sh "$CI_PROJECT_NAME" test/test_*.py
   tags:
   - python3
   except:
