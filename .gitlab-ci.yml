@@ -36,3 +36,14 @@ Pylint:
   - python3
   except:
   - tags
+
+Downstream:
+  parallel:
+    matrix:
+    - DOWNSTREAM_PROJECT: [loopy]
+  tags:
+  - python3
+  script: |
+    curl -L -O https://tiker.net/ci-support-v0
+    . ./ci-support-v0
+    test_downstream "$DOWNSTREAM_PROJECT"
