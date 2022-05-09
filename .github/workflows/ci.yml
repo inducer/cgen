@@ -69,4 +69,20 @@ jobs:
                 build_py_project_in_venv
                 build_docs
 
+    downstream_tests:
+        strategy:
+            matrix:
+                downstream_project: [loopy]
+        name: Tests for downstream project ${{ matrix.downstream_project }}
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v2
+        -   name: "Main Script"
+            env:
+                DOWNSTREAM_PROJECT: ${{ matrix.downstream_project }}
+            run: |
+                curl -L -O https://tiker.net/ci-support-v0
+                . ./ci-support-v0
+                test_downstream "$DOWNSTREAM_PROJECT"
+
 # vim: sw=4
