@@ -7,7 +7,7 @@ cgen: An Abstract Syntax Tree for C, in Python
 .. image:: https://github.com/inducer/cgen/workflows/CI/badge.svg?branch=main&event=push
     :alt: Github Build Status
     :target: https://github.com/inducer/cgen/actions?query=branch%3Amain+workflow%3ACI+event%3Apush
-.. image:: https://badge.fury.io/py/cgen.png
+.. image:: https://badge.fury.io/py/cgen.svg
     :alt: Python Package Index Release Page
     :target: https://pypi.org/project/cgen/
 
@@ -19,10 +19,6 @@ To represent mathematical expressions, cgen can be used with `pymbolic
 Places on the web related to cgen:
 
 * `Python package index <http://pypi.python.org/pypi/cgen>`_ (download releases)
-
-  .. image:: https://badge.fury.io/py/cgen.png
-      :target: http://pypi.python.org/pypi/cgen
-
 * `Documentation <http://documen.tician.de/cgen>`_ (read how things work)
 * `Github <http://github.com/inducer/cgen>`_ (get latest source code, file bugs)
 
