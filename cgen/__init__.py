@@ -974,7 +974,7 @@ class Block(Generable):
     def __init__(self, contents=None):
         if contents is None:
             contents = []
-        if(isinstance(contents, Block)):
+        if isinstance(contents, Block):
             contents = contents.contents
         self.contents = contents[:]
 
