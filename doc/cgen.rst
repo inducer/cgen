@@ -97,6 +97,12 @@ Nested Declarators
 .. autoclass:: Template
     :show-inheritance:
 
+.. autoclass:: AlignedAttribute
+    :show-inheritance:
+
+.. autoclass:: AlignValueAttribute
+    :show-inheritance:
+
 Declaration Specifiers
 ----------------------
 
