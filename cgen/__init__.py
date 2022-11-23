@@ -302,8 +302,8 @@ class AlignValueAttribute(NestedDeclarator):
     """
     Assigns an alignment for value of a pointer.
 
-    This is used for pointers where the user needs to guarantee that the
-    value of the pointer has the alignment needed. :class:`AlignedAttribute` on
+    This is used for pointers where the user guarantees to the compiler that the
+    value of the pointer has the alignment stated. :class:`AlignedAttribute` on
     the other hand tells the compiler to declare the type or the array with the
     given alignment and cannot be used for telling the compiler that an existing
     pointer has a certain alignment guarantee.
