@@ -284,6 +284,9 @@ class MaybeUnused(NestedDeclarator):
 
 
 class AlignedAttribute(NestedDeclarator):
+    """
+    Assigns an alignment for a definition of a type or an array.
+    """
     def __init__(self, align_bytes, subdecl):
         super().__init__(subdecl)
         self.align_bytes = align_bytes
@@ -293,6 +296,33 @@ class AlignedAttribute(NestedDeclarator):
         return sub_tp, f"{sub_decl} __attribute__ ((aligned ({self.align_bytes})))"
 
     mapper_method = "map_aligned"
+
+
+class AlignValueAttribute(NestedDeclarator):
+    """
+    Assigns an alignment for value of a pointer.
+
+    This is used for pointers where the user guarantees to the compiler that the
+    value of the pointer has the alignment stated. :class:`AlignedAttribute` on
+    the other hand tells the compiler to declare the type or the array with the
+    given alignment and cannot be used for telling the compiler that an existing
+    pointer has a certain alignment guarantee.
+    This attribute is currently supported by clang [1] and Intel [2] and is ignored
+    by gcc.
+
+    [1]: https://reviews.llvm.org/D4635
+    [2]: https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-reference/attributes/align-value.html  # noqa: E501
+    """
+    def __init__(self, align_bytes, subdecl):
+        super().__init__(subdecl)
+        self.align_bytes = align_bytes
+
+    def get_decl_pair(self):
+        sub_tp, sub_decl = self.subdecl.get_decl_pair()
+        return (sub_tp,
+            f"{sub_decl} __attribute__ ((align_value ({self.align_bytes})))")
+
+    mapper_method = "map_align_value"
 
 
 class Pointer(NestedDeclarator):
