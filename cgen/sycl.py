@@ -84,11 +84,17 @@ class CLConstant(DeclSpecifier):
     mapper_method = "map_cl_constant"
 
 
-class CLLocal(DeclSpecifier):
+class SYCLLocal(NestedDeclarator):
     def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__local")
+        print(subdecl)
+        self.type=subdecl.get_type()
+        self.subdecl=subdecl
 
-    mapper_method = "map_cl_local"
+    def get_decl_pair(self):
+        sub_tp,sub_decl=self.subdecl.get_decl_pair()
+        return [f"sycl::local_accessor<{self.type}>"],sub_decl
+    
+    mapper_method = "map_sycl_local"
 
 
 class CLGlobal(DeclSpecifier):
@@ -198,7 +204,26 @@ class CLVectorPOD(Declarator):
 # }}}
 
 # vim: fdm=marker
+class SYCLAccessor(NestedDeclarator):
+    def __init__(self, subdecl,handler,count=None):
+        NestedDeclarator.__init__(self, subdecl)
+        self.handler=handler
+        self.count=count
+        sub_tp, sub_decl = subdecl.get_decl_pair()
+        self.type=sub_tp[0]
+        self.sub_decl=sub_decl
 
+    def get_decl_pair(self):
+        if self.count is None:
+            return [f"sycl::accessor<{ self.type}>"], f"{self.sub_decl}({self.handler})"
+        else:
+            return [f"sycl::accessor<{ self.type}>"], f"{self.sub_decl}(sycl::range<1>({self.count}),{self.handler})"
+
+    def get_type(self):
+        return self.type
+    mapper_method = "map_sycl_accessor"
+
+    
 class SYCLBody(Generable):
     def __init__(self, body,ndim):
         """Initialize a function definition. *fdecl* is expected to be
