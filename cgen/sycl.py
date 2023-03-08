@@ -27,8 +27,11 @@ from cgen import \
         Value,\
         Pointer,\
         Extern,\
-NamespaceQualifier,\
-    Generable
+        NamespaceQualifier,\
+        Generable,\
+        FunctionBody,\
+        Lamda,\
+        Block
 
 
 def dtype_to_cltype(dtype):
@@ -225,20 +228,28 @@ class SYCLAccessor(NestedDeclarator):
 
     
 class SYCLBody(Generable):
-    def __init__(self, body,ndim):
-        """Initialize a function definition. *fdecl* is expected to be
-        a :class:`FunctionDeclaration` instance, while *body* is a
-        :class:`Block`.
-        """
-
-        self.ndim=ndim
-        self.upper = "queue_.submit([&](sycl::handler &h) {"+"\n h.parallel_for(range_, [=](sycl::nd_item<{}>  item)".format(self.ndim)
-        self.body = body
-        self.lower=");\n }).wait();"
+    def __init__(self, body,ndim,handler,nd_item):
+        self.body =SYCLQueueSubmit(Block([SYCLparallel_for(body,ndim,handler,nd_item)]),handler)
 
     def generate(self):
-        yield self.upper
         yield from self.body.generate()
-        yield self.lower
 
     mapper_method = "map_function_body"
+
+class SYCLparallel_for(Generable):
+    def __init__(self, body,ndim,handler,nd_item):
+        self.handler=handler
+        self.args=["range_",FunctionBody(Lamda("=",[Value(f"sycl::nd_item<{ndim}>",nd_item)]),body)]
+
+    def generate(self):
+        yield "{}.parallel_for({});".format(self.handler,", ".join(str(ad) for ad in self.args))
+
+    mapper_method = "map_SYCL_parallel_for"
+class SYCLQueueSubmit(Generable):
+    def __init__(self, body,handler):
+        self.args=[FunctionBody(Lamda("&",[Value("sycl::handler &", handler)]),body)]
+
+    def generate(self):
+        yield "queue_.submit({}).wait();".format(", ".join(str(ad) for ad in self.args))
+
+    mapper_method = "map_SYCL_queue_submit"

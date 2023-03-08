@@ -413,15 +413,13 @@ class FunctionDeclaration(NestedDeclarator):
     mapper_method = "map_function_declaration"
 
 # }}}
-class Lamda(NestedDeclarator):
-    def __init__(self, capture_clause,subdecl ,arg_decls):
+class Lamda(Declarator):
+    def __init__(self, capture_clause ,arg_decls):
         self.capture_clause = capture_clause
         self.arg_decls = arg_decls
-        NestedDeclarator.__init__(self, subdecl)
 
     def get_decl_pair(self):
-        sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, f"{sub_decl} = [{self.capture_clause}]({'{}'.format(', '.join(ad.inline() for ad in self.arg_decls))})"
+        return [f"[{self.capture_clause}]"], f"({'{}'.format(', '.join(ad.inline() for ad in self.arg_decls))})"
 
     mapper_method = "map_lamda"
 
