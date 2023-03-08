@@ -25,9 +25,6 @@ from cgen import \
         DeclSpecifier, \
         NestedDeclarator, \
         Value,\
-        Pointer,\
-        Extern,\
-        NamespaceQualifier,\
         Generable,\
         FunctionBody,\
         Lamda,\
@@ -71,43 +68,48 @@ class SYCLKernel(DeclSpecifier):
         subdecl.arg_decls.append(Value("sycl::queue","queue_"))
         subdecl.arg_decls.append(Value("sycl::nd_range<{}> ".format(self.ndim),"range_"))
         DeclSpecifier.__init__(self, subdecl,"")
-        
 
-    mapper_method = "map_cl_kernel"
+    mapper_method = "map_sycl_kernel"
 
 # }}}
 
 
 # {{{ kernel args
 
-class CLConstant(DeclSpecifier):
+class SYCLConstant(DeclSpecifier):
     def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__constant")
-
-    mapper_method = "map_cl_constant"
-
-
-class SYCLLocal(NestedDeclarator):
-    def __init__(self, subdecl):
-        print(subdecl)
-        self.type=subdecl.get_type()
         self.subdecl=subdecl
 
     def get_decl_pair(self):
         sub_tp,sub_decl=self.subdecl.get_decl_pair()
-        return [f"sycl::local_accessor<{self.type}>"],sub_decl
+        return [f"sycl::constant_ptr<{sub_tp[0]}>"],sub_decl
+    
+    mapper_method = "map_sycl_constant"
+
+
+class SYCLLocal(NestedDeclarator):
+    def __init__(self, subdecl):
+        self.subdecl=subdecl
+
+    def get_decl_pair(self):
+        sub_tp,sub_decl=self.subdecl.get_decl_pair()
+        return [f"sycl::local_ptr<{sub_tp[0]}>"],sub_decl
     
     mapper_method = "map_sycl_local"
 
 
-class CLGlobal(DeclSpecifier):
+class SYCLGlobal(DeclSpecifier):
     def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__global")
+        self.subdecl=subdecl
 
-    mapper_method = "map_cl_global"
+    def get_decl_pair(self):
+        sub_tp,sub_decl=self.subdecl.get_decl_pair()
+        return [f"sycl::global_ptr<{sub_tp[0]}>"],sub_decl
+    
+    mapper_method = "map_sycl_global"
 
-
-class CLImage(Value):
+# TODO sycl Image
+class SYCLImage(Value):
     def __init__(self, dims, mode, name):
         if mode == "r":
             spec = "__read_only"
@@ -124,32 +126,6 @@ class CLImage(Value):
 
 
 # {{{ function attributes
-
-class CLVecTypeHint(NestedDeclarator):
-    def __init__(self, subdecl, dtype=None, count=None, type_str=None):
-        if (dtype is None) != (count is None):
-            raise ValueError("dtype and count must always be "
-                    "specified together")
-
-        if (dtype is None and type_str is None) or \
-                (dtype is not None and type_str is not None):
-            raise ValueError("exactly one of dtype and type_str must be specified")
-
-        if type_str is None:
-            self.type_str = dtype_to_cltype(dtype)+str(count)
-        else:
-            self.type_str = type_str
-
-        super().__init__(subdecl)
-
-    def get_decl_pair(self):
-        sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("__attribute__ ((vec_type_hint({}))) {}".format(
-            sub_decl, self.type_str))
-
-    mapper_method = "map_cl_vec_type_hint"
-
-
 class _SYCLWorkGroupSizeDeclarator(Generable):
     def __init__(self, dim):
 
@@ -160,53 +136,15 @@ class _SYCLWorkGroupSizeDeclarator(Generable):
 
     def generate(self):
         yield self.decl
-
-class CLWorkGroupSizeHint(_SYCLWorkGroupSizeDeclarator):
-    """
-    See Sec 6.7.2 of OpenCL 2.0 spec, Version V2.2-11.
-    """
-
-    mapper_method = "map_cl_workgroup_size_hint"
-
-
 class SYCLRequiredWorkGroupSize(_SYCLWorkGroupSizeDeclarator):
-    """
-    See Sec 6.7.2 of OpenCL 2.0 spec, Version V2.2-11.
-    """
-    mapper_method = "map_cl_required_wokgroup_size"
+    mapper_method = "map_SYCL_required_wokgroup_size"
 
 # }}}
 
-
+#TODO SYCL vector
 # {{{ vector PODs
 
-class CLVectorPOD(Declarator):
-    def __init__(self, dtype, count, name):
-        self.dtype = np.dtype(dtype)
-        self.count = count
-        self.name = name
-
-    def get_decl_pair(self):
-        return [dtype_to_cltype(self.dtype)+str(self.count)], self.name
-
-    def struct_maker_code(self, name):
-        return name
-
-    def struct_format(self):
-        return str(self.count)+self.dtype.char
-
-    def alignment_requirement(self):
-        from struct import calcsize
-        return calcsize(self.struct_format())
-
-    def default_value(self):
-        return [0]*self.count
-
-    mapper_method = "map_cl_vector_pod"
-
 # }}}
-
-# vim: fdm=marker
 class SYCLAccessor(NestedDeclarator):
     def __init__(self, subdecl,handler,count=None):
         NestedDeclarator.__init__(self, subdecl)
@@ -234,7 +172,7 @@ class SYCLBody(Generable):
     def generate(self):
         yield from self.body.generate()
 
-    mapper_method = "map_function_body"
+    mapper_method = "map_SYCL_function_body"
 
 class SYCLparallel_for(Generable):
     def __init__(self, body,ndim,handler,nd_item):
