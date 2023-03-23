@@ -218,7 +218,7 @@ class SYCLQueueSubmit(Generable):
         ]
 
     def generate(self):
-        yield "{}.submit({}).wait();".format(
+        yield "{}.submit({});".format(
             self.queue, ", ".join(str(ad) for ad in self.args)
         )
 
