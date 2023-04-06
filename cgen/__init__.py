@@ -413,17 +413,21 @@ class FunctionDeclaration(NestedDeclarator):
     mapper_method = "map_function_declaration"
 
 # }}}
+
+
 class Lamda(Declarator):
-    def __init__(self, capture_clause ,arg_decls):
+    def __init__(self, capture_clause, arg_decls):
         self.capture_clause = capture_clause
         self.arg_decls = arg_decls
 
     def get_decl_pair(self):
-        return [f"[{self.capture_clause}]"], f"({'{}'.format(', '.join(ad.inline() for ad in self.arg_decls))})"
+        arg_decls = ", ".join(ad.inline() for ad in self.arg_decls)
+        return [f"[{self.capture_clause}]"], f"({arg_decls})"
 
     mapper_method = "map_lamda"
 
 # {{{ struct-like
+
 
 class Struct(Declarator):
     """A structure declarator."""
