@@ -389,6 +389,13 @@ class ArrayOf(NestedDeclarator):
     def default_value(self):
         return self.count*[self.subdecl.default_value()]
 
+    def get_size(self):
+        return self.count
+
+    def get_array_name(self):
+        sub_tp, sub_decl = self.subdecl.get_decl_pair()
+        return str(sub_decl)
+
     mapper_method = "map_array_of"
 
 

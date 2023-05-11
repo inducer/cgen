@@ -28,6 +28,8 @@ from cgen import (
     Lamda,
     NestedDeclarator,
     Value,
+    Assign,
+    ArrayOf
 )
 
 
@@ -93,12 +95,23 @@ class SYCLConstant(DeclSpecifier):
 
 
 class SYCLLocal(NestedDeclarator):
-    def __init__(self, subdecl):
+    def __init__(self, subdecl, item):
+        self.item = item
         self.subdecl = subdecl
 
     def get_decl_pair(self):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return [f"sycl::local_ptr<{sub_tp[0]}>"], sub_decl
+        if isinstance(self.subdecl, ArrayOf):
+            return ["auto&"], Assign(
+                self.subdecl.get_array_name(),
+                "*sycl::ext::oneapi::group_local_memory"
+                f"<{sub_tp[0]}[{self.subdecl.get_size()}]>"
+                f"({self.item}.get_group())")
+        else:
+            return ["auto&"], Assign(
+                sub_decl,
+                f"*sycl::ext::oneapi::group_local_memory<{sub_tp[0]}>"
+                f"({self.item}.get_group())")
 
     mapper_method = "map_sycl_local"
 
