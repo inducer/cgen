@@ -42,7 +42,8 @@ Downstream:
     matrix:
     - DOWNSTREAM_PROJECT: [loopy]
   tags:
-  - python3
+  - large-node
+  - "docker-runner"
   script: |
     curl -L -O https://tiker.net/ci-support-v0
     . ./ci-support-v0
