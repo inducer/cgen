@@ -389,6 +389,13 @@ class ArrayOf(NestedDeclarator):
     def default_value(self):
         return self.count*[self.subdecl.default_value()]
 
+    def get_size(self):
+        return self.count
+
+    def get_array_name(self):
+        sub_tp, sub_decl = self.subdecl.get_decl_pair()
+        return str(sub_decl)
+
     mapper_method = "map_array_of"
 
 
@@ -415,7 +422,19 @@ class FunctionDeclaration(NestedDeclarator):
 # }}}
 
 
+class Lamda(Declarator):
+    def __init__(self, capture_clause, arg_decls):
+        self.capture_clause = capture_clause
+        self.arg_decls = arg_decls
+
+    def get_decl_pair(self):
+        arg_decls = ", ".join(ad.inline() for ad in self.arg_decls)
+        return [f"[{self.capture_clause}]"], f"({arg_decls})"
+
+    mapper_method = "map_lamda"
+
 # {{{ struct-like
+
 
 class Struct(Declarator):
     """A structure declarator."""
