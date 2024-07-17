@@ -313,7 +313,7 @@ class AlignValueAttribute(NestedDeclarator):
     by gcc.
 
     [1]: https://reviews.llvm.org/D4635
-    [2]: https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-reference/attributes/align-value.html  # noqa: E501
+    [2]: https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-reference/attributes/align-value.html
     """
     def __init__(self, align_bytes, subdecl):
         super().__init__(subdecl)
@@ -486,7 +486,8 @@ class GenerableStruct(Struct):
             align_bytes = natural_align_bytes
         elif align_bytes < natural_align_bytes:
             from warnings import warn
-            warn("requested struct alignment smaller than natural alignment")
+            warn("requested struct alignment smaller than natural alignment",
+                 stacklevel=2)
 
         self.align_bytes = align_bytes
 
@@ -514,8 +515,8 @@ class GenerableStruct(Struct):
         assert _struct.calcsize(self.format) == self.bytes
 
     # until nvcc bug is fixed
-    #def struct_attributes(self):
-        #return "__attribute__ ((packed))"
+    # def struct_attributes(self):
+    #     return "__attribute__ ((packed))"
 
     def alignment_requirement(self):
         return self.align_bytes
@@ -540,7 +541,7 @@ class GenerableStruct(Struct):
     def _maker(self, with_defaults=False):
         def format_arg(f):
             if with_defaults:
-                return f"{f.name}={repr(f.default_value())}"
+                return f"{f.name}={f.default_value()!r}"
             else:
                 return f.name
 
@@ -871,9 +872,9 @@ class Comment(Generable):
     def __init__(self, text, skip_space=False):
         self.text = text
         if skip_space:
-            self.fmt_str = "/*{text}*/"
+            self.fmt_str = "/*{text}*/"  # noqa: RUF027
         else:
-            self.fmt_str = "/* {text} */"
+            self.fmt_str = "/* {text} */"  # noqa: RUF027
 
     def generate(self):
         yield self.fmt_str.format(text=self.text)
@@ -938,11 +939,11 @@ class Initializer(Generable):
         if isinstance(self.data, str) and "\n" in self.data:
             data_lines = self.data.split("\n")
             yield f"{tp_lines[-1]} {tp_decl} ="
-            for i, l in enumerate(data_lines):
+            for i, line in enumerate(data_lines):
                 if i == len(data_lines)-1:
-                    yield f"  {l};"
+                    yield f"  {line};"
                 else:
-                    yield f"  {l}"
+                    yield f"  {line}"
         else:
             yield f"{tp_lines[-1]} {tp_decl} = {self.data};"
 
@@ -1106,7 +1107,7 @@ class IfDef(Module):
         if len(elselines):
             elselines.insert(0, Line("#else"))
         endif_line = Line("#endif")
-        lines = [ifdef_line]+iflines+elselines+[endif_line]
+        lines = [ifdef_line, *iflines, *elselines, endif_line]
         super().__init__(lines)
 
     mapper_method = "map_ifdef"
@@ -1124,7 +1125,7 @@ class IfNDef(Module):
         ifndefdef_line = Line(f"#ifndef {condition}")
         if len(elselines):
             elselines.insert(0, Line("#else"))
-        lines = [ifndefdef_line]+ifndeflines+elselines+[Line("#endif")]
+        lines = [ifndefdef_line, *ifndeflines, *elselines, Line("#endif")]
         super().__init__(lines)
 
     mapper_method = "map_ifndef"

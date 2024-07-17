@@ -24,7 +24,7 @@ def test_cgen():
         ArrayOf(POD(np.float32, "normal"), 17),
         POD(np.uint16, "a_base"),
         POD(np.uint16, "b_base"),
-        #CudaGlobal(POD(np.uint8, "a_ilist_number")),
+        # CudaGlobal(POD(np.uint8, "a_ilist_number")),
         POD(np.uint8, "b_ilist_number"),
         POD(np.uint8, "bdry_flux_number"),  # 0 if not on boundary
         POD(np.uint8, "reserved"),
@@ -42,11 +42,11 @@ def test_cgen():
                 Assign("a", "b"),
                 Block([
                     Assign("a", "b-1"),
-                    #Break(),
+                    # Break(),
                     ])
                 ),
             ),
-        #BlankLine(),
+        # BlankLine(),
         Comment("all done"),
         ]))
     t_decl = Template("typename T",
