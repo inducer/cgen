@@ -134,7 +134,7 @@ class _CLWorkGroupSizeDeclarator(NestedDeclarator):
         NestedDeclarator.__init__(self, subdecl)
 
         while len(dim) < 3:
-            dim = dim + (1,)
+            dim = (*dim, 1)
 
         self.dim = dim
 
