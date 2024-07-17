@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from cgen import Generable, DeclSpecifier, Pointer
+from cgen import DeclSpecifier, Generable, Pointer
 
 
 class ISPCVarying(DeclSpecifier):

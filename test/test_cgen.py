@@ -1,8 +1,19 @@
-from cgen import (
-        POD, Struct, FunctionBody, FunctionDeclaration,
-        For, If, Assign, Value, Block, ArrayOf, Comment,
-        Template)
 import numpy as np
+
+from cgen import (
+    POD,
+    ArrayOf,
+    Assign,
+    Block,
+    Comment,
+    For,
+    FunctionBody,
+    FunctionDeclaration,
+    If,
+    Struct,
+    Template,
+    Value,
+)
 
 
 def test_cgen():
