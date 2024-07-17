@@ -19,7 +19,7 @@ THE SOFTWARE.
 """
 
 
-from cgen import NestedDeclarator, DeclSpecifier, Pointer
+from cgen import DeclSpecifier, NestedDeclarator, Pointer
 
 
 class CudaGlobal(DeclSpecifier):

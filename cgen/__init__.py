@@ -26,7 +26,9 @@ THE SOFTWARE.
 from typing import Any
 
 import numpy
-from pytools import memoize_method, memoize
+
+from pytools import memoize, memoize_method
+
 
 try:
     import pycuda._pvt_struct as _struct
@@ -610,7 +612,7 @@ class Enum(Generable):
     def get_c_typedef_line(cls):
         """Returns a typedef to define this enum in C."""
 
-        from pyopencl.tools import dtype_to_ctype   # pylint: disable=import-error
+        from pyopencl.tools import dtype_to_ctype  # pylint: disable=import-error
         return f"typedef {dtype_to_ctype(cls.dtype)} {cls.c_name};"
 
     @classmethod

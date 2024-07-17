@@ -20,11 +20,7 @@ THE SOFTWARE.
 
 import numpy as np
 
-from cgen import \
-        Declarator, \
-        DeclSpecifier, \
-        NestedDeclarator, \
-        Value
+from cgen import Declarator, DeclSpecifier, NestedDeclarator, Value
 
 
 def dtype_to_cltype(dtype):
