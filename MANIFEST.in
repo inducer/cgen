@@ -1,9 +1,9 @@
-include test/*.py
-include doc/source/*.rst
+include doc/*.rst
 include doc/Makefile
-include doc/source/conf.py
-include doc/source/_static/*.css
-include doc/source/_templates/*.html
 
 include LICENSE
 include README.rst
+
+prune .github
+exclude .gitlab-ci.yml
+exclude .gitignore
