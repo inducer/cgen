@@ -1,9 +1,0 @@
-include doc/*.rst
-include doc/Makefile
-
-include LICENSE
-include README.rst
-
-prune .github
-exclude .gitlab-ci.yml
-exclude .gitignore
