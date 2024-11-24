@@ -1,8 +1,6 @@
 [build-system]
-build-backend = "setuptools.build_meta"
-requires = [
-    "setuptools>=63",
-]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "cgen"
@@ -41,11 +39,6 @@ test = [
 [project.urls]
 Documentation = "https://documen.tician.de/cgen"
 Homepage = "https://github.com/inducer/cgen"
-
-[tool.setuptools.packages.find]
-include = [
-    "cgen*",
-]
 
 [tool.ruff]
 preview = true
