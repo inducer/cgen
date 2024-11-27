@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cgen"
-version = "2020.2"
+version = "2024.0"
 description = "C/C++ source generation from an AST"
 readme = "README.rst"
 license = { text = "MIT" }
