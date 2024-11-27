@@ -1133,13 +1133,8 @@ class IfNDef(Module):
 
 class PrivateNamespace(Block):
     def get_namespace_name(self):
-        try:
-            import hashlib
-            checksum = hashlib.md5()
-        except ImportError:
-            # for Python << 2.5
-            import md5
-            checksum = md5.new()
+        import hashlib
+        checksum = hashlib.md5()
 
         for c in self.contents:
             for line in c.generate():
