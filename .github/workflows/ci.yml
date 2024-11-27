@@ -31,6 +31,24 @@ jobs:
                 curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/prepare-and-run-pylint.sh
                 . ./prepare-and-run-pylint.sh "$(basename $GITHUB_REPOSITORY)" examples/*.py test/test_*.py
 
+    mypy:
+        name: Mypy
+        runs-on: ubuntu-latest
+        steps:
+        -   uses: actions/checkout@v4
+        -
+            uses: actions/setup-python@v5
+            with:
+                python-version: '3.x'
+        -   name: "Main Script"
+            run: |
+                EXTRA_INSTALL="mypy pytest"
+                curl -L -O https://tiker.net/ci-support-v0
+                . ./ci-support-v0
+
+                build_py_project_in_venv
+                python -m mypy "$(basename $GITHUB_REPOSITORY)" examples test
+
     pytest:
         name: Pytest on Py${{ matrix.python-version }}
         runs-on: ubuntu-latest
@@ -45,9 +63,11 @@ jobs:
                 python-version: ${{ matrix.python-version }}
         -   name: "Main Script"
             run: |
-                EXTRA_INSTALL="numpy"
-                curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
-                . ./build-and-test-py-project.sh
+                curl -L -O https://tiker.net/ci-support-v0
+                . ./ci-support-v0
+
+                build_py_project_in_venv
+                test_py_project
 
     docs:
         name: Documentation
