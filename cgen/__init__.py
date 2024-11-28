@@ -1,5 +1,7 @@
 """Generator for C/C++."""
 
+from __future__ import annotations
+
 
 __copyright__ = "Copyright (C) 2008 Andreas Kloeckner"
 
@@ -23,6 +25,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from abc import ABC, abstractmethod
+from collections.abc import Generator, Sequence
 from typing import Any
 
 import numpy
@@ -82,22 +86,21 @@ def dtype_to_ctype(dtype):
         raise ValueError(f"unable to map dtype '{dtype}'")
 
 
-class Generable:
-    def __str__(self):
+class Generable(ABC):
+    def __str__(self) -> str:
         """Return a single string (possibly containing newlines) representing
         this code construct."""
         return "\n".join(line.rstrip() for line in self.generate())
 
-    def generate(self, with_semicolon=True):
+    @abstractmethod
+    def generate(self, with_semicolon: bool = True) -> Generator[str]:
         """Generate (i.e. yield) the lines making up this code construct."""
-
-        raise NotImplementedError
 
 
 # {{{ declarators
 
-class Declarator(Generable):
-    def generate(self, with_semicolon=True):
+class Declarator(Generable, ABC):
+    def generate(self, with_semicolon: bool = True) -> Generator[str]:
         tp_lines, tp_decl = self.get_decl_pair()
         tp_lines = list(tp_lines)
         yield from tp_lines[:-1]
@@ -109,7 +112,8 @@ class Declarator(Generable):
         else:
             yield f"{tp_lines[-1]} {tp_decl}{sc}"
 
-    def get_decl_pair(self):
+    @abstractmethod
+    def get_decl_pair(self) -> tuple[Sequence[str], str]:
         """Return a tuple ``(type_lines, rhs)``.
 
         *type_lines* is a non-empty list of lines (most often just a
@@ -119,7 +123,7 @@ class Declarator(Generable):
         """
         raise NotImplementedError
 
-    def inline(self, with_semicolon=True):
+    def inline(self, with_semicolon: bool = True) -> str:
         """Return the declarator as a single line."""
         tp_lines, tp_decl = self.get_decl_pair()
         tp_lines = " ".join(tp_lines)
@@ -134,7 +138,7 @@ class POD(Declarator):
     and the *name* is given as a string.
     """
 
-    def __init__(self, dtype, name):
+    def __init__(self, dtype: numpy.dtype, name: str) -> None:
         self.dtype = numpy.dtype(dtype)
         self.name = name
 
@@ -159,7 +163,7 @@ class POD(Declarator):
 class Value(Declarator):
     """A simple declarator: *typename* and *name* are given as strings."""
 
-    def __init__(self, typename, name):
+    def __init__(self, typename: str, name: str) -> None:
         self.typename = typename
         self.name = name
 
@@ -179,7 +183,7 @@ class Value(Declarator):
 
 
 class NestedDeclarator(Declarator):
-    def __init__(self, subdecl):
+    def __init__(self, subdecl: Declarator) -> None:
         self.subdecl = subdecl
 
     @property
@@ -200,7 +204,7 @@ class NestedDeclarator(Declarator):
 
 
 class DeclSpecifier(NestedDeclarator):
-    def __init__(self, subdecl, spec, sep=" "):
+    def __init__(self, subdecl: Declarator, spec, sep=" ") -> None:
         NestedDeclarator.__init__(self, subdecl)
         self.spec = spec
         self.sep = sep
@@ -364,7 +368,7 @@ class Reference(Pointer):
 
 
 class ArrayOf(NestedDeclarator):
-    def __init__(self, subdecl, count=None):
+    def __init__(self, subdecl: Declarator, count=None):
         NestedDeclarator.__init__(self, subdecl)
         self.count = count
 
@@ -395,7 +399,7 @@ class ArrayOf(NestedDeclarator):
 
 
 class FunctionDeclaration(NestedDeclarator):
-    def __init__(self, subdecl, arg_decls):
+    def __init__(self, subdecl: Declarator, arg_decls: Sequence[Declarator]):
         NestedDeclarator.__init__(self, subdecl)
         self.arg_decls = arg_decls
 
@@ -587,7 +591,7 @@ class Enum(Generable):
     """
 
     c_name: str
-    dtype: "numpy.dtype[Any]"
+    dtype: numpy.dtype[Any]
     c_value_prefix: str
 
     @classmethod
@@ -828,7 +832,7 @@ class Pragma(Generable):
 
 
 class Statement(Generable):
-    def __init__(self, text):
+    def __init__(self, text: str) -> None:
         self.text = text
 
     def generate(self):
