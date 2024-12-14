@@ -52,8 +52,10 @@ extend-select = [
     "G",   # flake8-logging-format
     "I",   # flake8-isort
     "N",   # pep8-naming
+    "NPY", # numpy
     "Q",   # flake8-quotes
     "RUF", # ruff
+    "TC",  # flake8-type-checking
     "UP",  # pyupgrade
     "W",   # pycodestyle
 ]

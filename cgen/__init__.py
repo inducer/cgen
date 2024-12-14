@@ -26,8 +26,7 @@ THE SOFTWARE.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy
 
@@ -35,9 +34,13 @@ from pytools import memoize, memoize_method
 
 
 try:
+    # NOTE: pycuda still needs this for complex number support.
     import pycuda._pvt_struct as _struct
 except ImportError:
     import struct as _struct
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Sequence
 
 
 @memoize
