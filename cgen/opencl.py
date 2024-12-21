@@ -127,12 +127,16 @@ class CLVecTypeHint(NestedDeclarator):
                 "Exactly one of 'dtype' and 'type_str' must be specified: "
                 f"dtype is '{dtype}' and type_str is '{type_str}'")
 
+        dtype = np.dtype(dtype)
         if type_str is None:
-            self.type_str = f"{dtype_to_cltype(dtype)}{count}"
+            type_str = f"{dtype_to_cltype(dtype)}{count}"
         else:
-            self.type_str = type_str
+            type_str = type_str
 
         super().__init__(subdecl)
+        self.dtype = dtype
+        self.count = count
+        self.type_str = type_str
 
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()

@@ -26,7 +26,7 @@ THE SOFTWARE.
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
 
@@ -90,6 +90,8 @@ def dtype_to_ctype(dtype: Any) -> str:
 
 
 class Generable(ABC):
+    mapper_method: ClassVar[str]
+
     def __str__(self) -> str:
         """
         :returns: a single string (possibly containing newlines) representing
@@ -251,6 +253,10 @@ class DeclSpecifier(NestedDeclarator):
 class NamespaceQualifier(DeclSpecifier):
     def __init__(self, namespace: str, subdecl: Declarator) -> None:
         super().__init__(subdecl, namespace, sep="::")
+
+    @property
+    def namespace(self) -> str:
+        return self.spec
 
     mapper_method = "map_namespace_qualifier"
 
@@ -458,17 +464,19 @@ class Struct(Declarator):
 
     def __init__(self,
                  tpname: str,
-                 fields: list[Declarator],
+                 fields: Sequence[Declarator],
                  declname: str | None = None,
                  pad_bytes: int = 0) -> None:
         """Initialize the structure declarator.
-        *tpname* is the name of the structure, while *declname* is the
-        name used for the declarator. *pad_bytes* is the number of
-        padding bytes added at the end of the structure.
-        *fields* is a list of :class:`Declarator` instances.
+
+        :arg tpname: the name of the structure.
+        :arg fields: a sequence of :class:`Declarator` instances.
+        :arg declname: the name used for the declarator.
+        :arg pad_bytes: the number of padding bytes added at the end of the structure.
         """
+
         self.tpname = tpname
-        self.fields = fields
+        self.fields = tuple(fields)
         self.declname = declname
         self.pad_bytes = pad_bytes
 
@@ -504,10 +512,10 @@ class Struct(Declarator):
 class GenerableStruct(Struct):
     def __init__(self,
                  tpname: str,
-                 fields: list[Declarator],
+                 fields: Sequence[Declarator],
                  declname: str | None = None,
                  align_bytes: int | None = None,
-                 aligned_prime_to: list[int] | None = None) -> None:
+                 aligned_prime_to: Sequence[int] | None = None) -> None:
         """Initialize a structure declarator.
 
         :arg tpname: the name of the structure.
@@ -517,16 +525,18 @@ class GenerableStruct(Struct):
 
         :arg align_bytes: an integer that causes the structure to be padded to
             an integer multiple of itself.
-        :arg aligned_prime_to: a list of integers. If the resulting structure's
+        :arg aligned_prime_to: a sequence of integers. If the resulting structure's
             size is ``s``, then ``s//align_bytes`` will be made prime to all
             numbers in *aligned_prime_to*. (Sounds obscure? It's needed for
             avoiding bank conflicts in CUDA programming.)
         """
         if aligned_prime_to is None:
-            aligned_prime_to = []
+            aligned_prime_to = ()
+        aligned_prime_to = tuple(aligned_prime_to)
 
+        fields = tuple(fields)
         format = "".join(f.struct_format() for f in fields)
-        bytes = _struct.calcsize(format)
+        nbytes = _struct.calcsize(format)
 
         natural_align_bytes = max(f.alignment_requirement() for f in fields)
         if align_bytes is None:
@@ -536,9 +546,7 @@ class GenerableStruct(Struct):
             warn("requested struct alignment smaller than natural alignment",
                  stacklevel=2)
 
-        self.align_bytes = align_bytes
-
-        padded_bytes = ((bytes + align_bytes - 1) // align_bytes) * align_bytes
+        padded_bytes = ((nbytes + align_bytes - 1) // align_bytes) * align_bytes
 
         def satisfies_primality(n: int) -> bool:
             import math
@@ -550,14 +558,17 @@ class GenerableStruct(Struct):
         while not satisfies_primality(padded_bytes // align_bytes):
             padded_bytes += align_bytes
 
-        super().__init__(tpname, fields, declname, padded_bytes - bytes)
+        super().__init__(tpname, fields, declname, padded_bytes - nbytes)
+
+        self.align_bytes = align_bytes
+        self.aligned_prime_to = aligned_prime_to
 
         if self.pad_bytes:
             self.format = format + f"{self.pad_bytes}x"
             self.bytes = padded_bytes
         else:
             self.format = format
-            self.bytes = bytes
+            self.bytes = nbytes
 
         assert _struct.calcsize(self.format) == self.bytes
 
@@ -1043,9 +1054,9 @@ def Constant(vdecl: Declarator, data: str) -> Initializer:  # noqa: N802
 
 
 class ArrayInitializer(Generable):
-    def __init__(self, vdecl: Declarator, data: str) -> None:
+    def __init__(self, vdecl: Declarator, data: Sequence[str]) -> None:
         self.vdecl = vdecl
-        self.data = data
+        self.data = tuple(data)
 
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         yield from self.vdecl.generate(with_semicolon=False)
@@ -1126,8 +1137,7 @@ class LiteralLines(Generable):
             text = text[6:]
 
         if not text.startswith("\n"):
-            raise ValueError("expected newline as first character "
-                    "in literal lines")
+            raise ValueError("Expected newline as first character in literal lines")
 
         lines = text.split("\n")
         while lines[0].strip() == "":
@@ -1142,7 +1152,7 @@ class LiteralLines(Generable):
 
             for line in lines[1:]:
                 if line[:base_indent].strip():
-                    raise ValueError("inconsistent indentation")
+                    raise ValueError("Inconsistent indentation")
 
         self.lines = [line[base_indent:] for line in lines]
 
