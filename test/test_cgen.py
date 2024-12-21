@@ -16,7 +16,7 @@ from cgen import (
 )
 
 
-def test_cgen():
+def test_cgen() -> None:
     s = Struct("yuck", [
         POD(np.float32, "h", ),
         POD(np.float32, "order"),
