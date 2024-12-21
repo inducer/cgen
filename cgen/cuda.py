@@ -19,39 +19,39 @@ THE SOFTWARE.
 """
 
 
-from cgen import DeclSpecifier, NestedDeclarator, Pointer
+from cgen import Declarator, DeclPair, DeclSpecifier, NestedDeclarator, Pointer
 
 
 class CudaGlobal(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__global__")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "__global__")
 
     mapper_method = "map_cuda_global"
 
 
 class CudaDevice(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__device__")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "__device__")
 
     mapper_method = "map_cuda_device"
 
 
 class CudaShared(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__shared__")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "__shared__")
 
     mapper_method = "map_cuda_shared"
 
 
 class CudaConstant(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__constant__")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "__constant__")
 
     mapper_method = "map_cuda_constant"
 
 
 class CudaRestrictPointer(Pointer):
-    def get_decl_pair(self):
+    def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"*__restrict__ {sub_decl}"
 
@@ -59,13 +59,16 @@ class CudaRestrictPointer(Pointer):
 
 
 class CudaLaunchBounds(NestedDeclarator):
-    def __init__(self, max_threads_per_block, subdecl, min_blocks_per_mp=None):
+    def __init__(self,
+                 max_threads_per_block: int,
+                 subdecl: Declarator,
+                 min_blocks_per_mp: int | None = None) -> None:
         self.max_threads_per_block = max_threads_per_block
         self.min_blocks_per_mp = min_blocks_per_mp
 
         super().__init__(subdecl)
 
-    def get_decl_pair(self):
+    def get_decl_pair(self) -> DeclPair:
         if self.min_blocks_per_mp is not None:
             lb = f"{self.max_threads_per_block}, {self.min_blocks_per_mp}"
         else:
