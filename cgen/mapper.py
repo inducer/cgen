@@ -23,13 +23,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import Any, Generic, ParamSpec, TypeVar, cast
+
+import cgen
+from cgen import cuda, ispc, opencl as cl
+
+
+R = TypeVar("R")
+P = ParamSpec("P")
+
 
 class UnsupportedNodeError(ValueError):
     pass
 
 
-class ASTMapper:
-    def __call__(self, node, *args, **kwargs):
+class ASTMapper(Generic[P, R]):
+    def __call__(self, node: object, *args: P.args, **kwargs: P.kwargs) -> R:
         """Dispatch *node* to its corresponding mapper method. Pass on
         ``*args`` and ``**kwargs`` unmodified.
 
@@ -41,78 +50,129 @@ class ASTMapper:
         """
 
         try:
-            method = getattr(self, node.mapper_method)
+            method = getattr(self, node.mapper_method)  # type: ignore[attr-defined]
         except AttributeError:
-            return self.handle_unsupported(
-                    node, *args, **kwargs)
+            return self.handle_unsupported(node, *args, **kwargs)
 
-        return method(node, *args, **kwargs)
+        return cast("R", method(node, *args, **kwargs))
 
-    def handle_unsupported(self, node, *args, **kwargs):
+    def handle_unsupported(
+            self, node: Any, *args: P.args, **kwargs: P.kwargs) -> R:
         """Mapper method that is invoked for node subclasses for which a mapper
         method does not exist in this mapper.
         """
 
         raise UnsupportedNodeError(
-                "{} cannot handle nodes of type {}".format(
-                    type(self), type(node)))
+            f"{type(self)} cannot handle nodes of type {type(node)}")
 
     rec = __call__
 
 
-class IdentityMapper(ASTMapper):
-    def map_expression(self, node, *args, **kwargs):
+class IdentityMapper(ASTMapper[P, cgen.Generable]):
+    def rec(self, node: R, *args: P.args, **kwargs: P.kwargs) -> R:  # type: ignore[override]
+        return cast("R", super().rec(node, *args, **kwargs))
+
+    def map_expression(
+            self, node: R, *args: P.args, **kwargs: P.kwargs
+        ) -> R:
         raise NotImplementedError
 
-    def map_pod(self, node, *args, **kwargs):
+    def map_pod(
+            self, node: cgen.POD, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.POD:
         return type(node)(node.dtype, node.name)
 
-    def map_value(self, node, *args, **kwargs):
+    def map_value(
+            self, node: cgen.Value, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Value:
         return type(node)(node.typename, node.name)
 
-    def map_namespace_qualifier(self, node, *args, **kwargs):
+    def map_namespace_qualifier(
+            self, node: cgen.NamespaceQualifier, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.NamespaceQualifier:
         return type(node)(node.namespace, self.rec(node.subdecl, *args, **kwargs))
 
-    def map_typedef(self, node, *args, **kwargs):
+    def map_typedef(
+            self, node: cgen.Typedef, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Typedef:
         return type(node)(self.rec(node.subdecl, *args, **kwargs))
 
-    map_static = map_typedef
-    map_const = map_typedef
-    map_volatile = map_typedef
+    def map_static(
+            self, node: cgen.Static, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Static:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
 
-    def map_extern(self, node, *args, **kwargs):
+    def map_const(
+            self, node: cgen.Const, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Const:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_volatile(
+            self, node: cgen.Volatile, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Volatile:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_maybe_unused(
+            self, node: cgen.MaybeUnused, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.MaybeUnused:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_pointer(
+            self, node: cgen.Pointer, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Pointer:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_restrict_pointer(
+            self, node: cgen.RestrictPointer, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.RestrictPointer:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_reference(
+            self, node: cgen.Reference, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Reference:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_extern(
+            self, node: cgen.Extern, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Extern:
         return type(node)(node.language, self.rec(node.subdecl, *args, **kwargs))
 
-    def map_template_specializer(self, node, *args, **kwargs):
+    def map_template_specializer(
+            self, node: cgen.TemplateSpecializer, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.TemplateSpecializer:
         return type(node)(node.specializer, self.rec(node.subdecl, *args, **kwargs))
 
-    map_maybe_unused = map_typedef
-
-    def map_aligned(self, node, *args, **kwargs):
+    def map_aligned(
+            self, node: cgen.AlignedAttribute, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.AlignedAttribute:
         return type(node)(node.align_bytes, self.rec(node.subdecl, *args, **kwargs))
 
-    map_pointer = map_typedef
-    map_restrict_pointer = map_typedef
-    map_reference = map_typedef
-
-    def map_array_of(self, node, *args, **kwargs):
+    def map_array_of(
+            self, node: cgen.ArrayOf, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.ArrayOf:
         return type(node)(
                 self.rec(node.subdecl, *args, **kwargs),
                 self.map_expression(node.count, *args, **kwargs))
 
-    def map_function_declaration(self, node, *args, **kwargs):
+    def map_function_declaration(
+            self, node: cgen.FunctionDeclaration, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.FunctionDeclaration:
         return type(node)(
-                self.rec(node.subdecl),
+                self.rec(node.subdecl, *args, **kwargs),
                 tuple(self.rec(sd, *args, **kwargs) for sd in node.arg_decls))
 
-    def map_struct(self, node, *args, **kwargs):
+    def map_struct(
+            self, node: cgen.Struct, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Struct:
         return type(node)(
                 node.tpname,
                 tuple(self.rec(f, *args, **kwargs) for f in node.fields),
                 node.declname,
                 node.pad_bytes)
 
-    def map_generable_struct(self, node, *args, **kwargs):
+    def map_generable_struct(
+            self, node: cgen.GenerableStruct, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.GenerableStruct:
         return type(node)(
                 node.tpname,
                 tuple(self.rec(f, *args, **kwargs) for f in node.fields),
@@ -120,12 +180,16 @@ class IdentityMapper(ASTMapper):
                 node.align_bytes,
                 node.aligned_prime_to)
 
-    def map_template(self, node, *args, **kwargs):
+    def map_template(
+            self, node: cgen.Template, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Template:
         return type(node)(
                 node.template_spec,
-                self.rec(node.sub_decl, *args, **kwargs))
+                self.rec(node.subdecl, *args, **kwargs))
 
-    def map_if(self, node, *args, **kwargs):
+    def map_if(
+            self, node: cgen.If, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.If:
         return type(node)(
                 self.map_expression(node.condition, *args, **kwargs),
                 self.rec(node.then_, *args, **kwargs),
@@ -133,91 +197,135 @@ class IdentityMapper(ASTMapper):
                 if node.else_ is not None
                 else None)
 
-    def map_while(self, node, *args, **kwargs):
+    def map_while(
+            self, node: cgen.While, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.While:
         return type(node)(
                 self.map_expression(node.condition, *args, **kwargs),
                 self.rec(node.body, *args, **kwargs))
 
-    def map_for(self, node, *args, **kwargs):
+    def map_for(
+            self, node: cgen.For, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.For:
         return type(node)(
                 self.rec(node.start, *args, **kwargs),
                 self.map_expression(node.condition, *args, **kwargs),
                 self.map_expression(node.update, *args, **kwargs),
                 self.rec(node.body, *args, **kwargs))
 
-    def map_do_while(self, node, *args, **kwargs):
+    def map_do_while(
+            self, node: cgen.DoWhile, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.DoWhile:
         return type(node)(
                 self.map_expression(node.condition, *args, **kwargs),
                 self.rec(node.body, *args, **kwargs))
 
-    def map_define(self, node, *args, **kwargs):
+    def map_define(
+            self, node: cgen.Define, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Define:
         return node
 
-    def map_include(self, node, *args, **kwargs):
+    def map_include(
+            self, node: cgen.Include, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Include:
         return node
 
-    def map_pragma(self, node, *args, **kwargs):
+    def map_pragma(
+            self, node: cgen.Pragma, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Pragma:
         return node
 
-    def map_statement(self, node, *args, **kwargs):
+    def map_statement(
+            self, node: cgen.Statement, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Statement:
         return type(node)(node.text)
 
-    def map_expression_statement(self, node, *args, **kwargs):
+    def map_expression_statement(
+            self, node: cgen.ExpressionStatement, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.ExpressionStatement:
         return type(node)(
                 self.map_expression(node.expr, *args, **kwargs))
 
-    def map_assignment(self, node, *args, **kwargs):
+    def map_assignment(
+            self, node: cgen.Assign, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Assign:
         return type(node)(
                 self.map_expression(node.lvalue, *args, **kwargs),
                 self.map_expression(node.rvalue, *args, **kwargs))
 
-    def map_line(self, node, *args, **kwargs):
+    def map_line(
+            self, node: cgen.Line, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Line:
         return node
 
-    def map_comment(self, node, *args, **kwargs):
+    def map_comment(
+            self, node: cgen.Comment, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Comment:
         return node
 
-    def map_multiline_comment(self, node, *args, **kwargs):
+    def map_multiline_comment(
+            self, node: cgen.MultilineComment, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.MultilineComment:
         return node
 
-    def map_line_comment(self, node, *args, **kwargs):
+    def map_line_comment(
+            self, node: cgen.LineComment, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.LineComment:
         return node
 
-    def map_initializer(self, node, *args, **kwargs):
+    def map_initializer(
+            self, node: cgen.Initializer, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Initializer:
         return type(node)(
                 self.rec(node.vdecl, *args, **kwargs),
                 self.map_expression(node.data, *args, **kwargs))
 
-    def map_array_initializer(self, node, *args, **kwargs):
+    def map_array_initializer(
+            self, node: cgen.ArrayInitializer, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.ArrayInitializer:
         return type(node)(
                 self.rec(node.vdecl, *args, **kwargs),
                 tuple(
                     self.map_expression(expr, *args, **kwargs)
                     for expr in node.data))
 
-    def map_function_body(self, node, *args, **kwargs):
+    def map_function_body(
+            self, node: cgen.FunctionBody, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.FunctionBody:
         return type(node)(
                 self.rec(node.fdecl, *args, **kwargs),
                 self.rec(node.body, *args, **kwargs))
 
-    def map_block(self, node, *args, **kwargs):
+    def map_block(
+            self, node: cgen.Block, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.Block:
         return type(node)(
                 tuple(self.rec(c, *args, **kwargs)
                     for c in node.contents))
 
-    def map_literal_lines(self, node, *args, **kwargs):
+    def map_literal_lines(
+            self, node: cgen.LiteralLines, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.LiteralLines:
         return node
 
-    def map_literal_block(self, node, *args, **kwargs):
-        return type(node)()
-
-    def map_ifdef(self, node, *args, **kwargs):
+    def map_literal_block(
+            self, node: cgen.LiteralBlock, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.LiteralBlock:
         return node
 
-    def map_ifndef(self, node, *args, **kwargs):
+    def map_ifdef(
+            self, node: cgen.IfDef, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.IfDef:
         return node
 
-    def map_custom_loop(self, node, *args, **kwargs):
+    def map_ifndef(
+            self, node: cgen.IfNDef, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.IfNDef:
+        return node
+
+    def map_custom_loop(
+            self, node: cgen.CustomLoop, *args: P.args, **kwargs: P.kwargs
+        ) -> cgen.CustomLoop:
         return type(node)(node.intro_line_,
                           self.rec(node.body, *args, **kwargs),
                           node.outro_line_,
@@ -225,58 +333,121 @@ class IdentityMapper(ASTMapper):
 
     # {{{ opencl
 
-    map_cl_kernel = map_typedef
-    map_cl_constant = map_typedef
-    map_cl_global = map_typedef
-    map_cl_local = map_typedef
+    def map_cl_kernel(
+            self, node: cl.CLKernel, *args: P.args, **kwargs: P.kwargs
+        ) -> cl.CLKernel:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
 
-    def map_cl_image(self, node, *args, **kwargs):
+    def map_cl_constant(
+            self, node: cl.CLConstant, *args: P.args, **kwargs: P.kwargs
+        ) -> cl.CLConstant:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_cl_global(
+            self, node: cl.CLGlobal, *args: P.args, **kwargs: P.kwargs
+        ) -> cl.CLGlobal:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_cl_local(
+            self, node: cl.CLLocal, *args: P.args, **kwargs: P.kwargs
+        ) -> cl.CLLocal:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_cl_image(
+            self, node: cl.CLImage, *args: P.args, **kwargs: P.kwargs
+        ) -> cl.CLImage:
         return node
 
-    def map_cl_vec_type_hint(self, node, *args, **kwargs):
+    def map_cl_vec_type_hint(
+            self, node: cl.CLVecTypeHint, *args: P.args, **kwargs: P.kwargs
+        ) -> cl.CLVecTypeHint:
         return type(node)(
                 self.rec(node.subdecl, *args, **kwargs),
                 node.dtype, node.count, node.type_str)
 
-    def map_cl_workgroup_size_declarator(self, node, *args, **kwargs):
-        return type(node)(
-                node.dim, self.rec(node.subdecl, *args, **kwargs))
+    def map_cl_workgroup_size_hint(
+            self, node: cl.CLWorkGroupSizeHint, *args: P.args, **kwargs: P.kwargs
+        ) -> cl.CLWorkGroupSizeHint:
+        return type(node)(node.dim, self.rec(node.subdecl, *args, **kwargs))
 
-    map_cl_workgroup_size_hint = map_cl_workgroup_size_declarator
-    map_cl_required_wokgroup_size = map_cl_workgroup_size_declarator
+    def map_cl_required_wokgroup_size(
+            self, node: cl.CLRequiredWorkGroupSize, *args: P.args, **kwargs: P.kwargs
+        ) -> cl.CLRequiredWorkGroupSize:
+        return type(node)(node.dim, self.rec(node.subdecl, *args, **kwargs))
 
     # }}}
 
     # {{{ ispc
 
-    def map_ispc_varying(self, node, *args, **kwargs):
+    def map_ispc_varying(
+            self, node: ispc.ISPCVarying, *args: P.args, **kwargs: P.kwargs
+        ) -> ispc.ISPCVarying:
         return type(node)(self.rec(node.subdecl, *args, **kwargs))
 
-    map_ispc_uniform = map_ispc_varying
-    map_ispc_export = map_ispc_varying
-    map_ispc_task = map_ispc_varying
-    map_ispc_varying_pointer = map_ispc_varying
-    map_ispc_uniform_pointer = map_ispc_varying
+    def map_ispc_uniform(
+            self, node: ispc.ISPCUniform, *args: P.args, **kwargs: P.kwargs
+        ) -> ispc.ISPCUniform:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
 
-    def map_ispc_launch(self, node, *args, **kwargs):
+    def map_ispc_export(
+            self, node: ispc.ISPCExport, *args: P.args, **kwargs: P.kwargs
+        ) -> ispc.ISPCExport:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_ispc_task(
+            self, node: ispc.ISPCTask, *args: P.args, **kwargs: P.kwargs
+        ) -> ispc.ISPCTask:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_ispc_varying_pointer(
+            self, node: ispc.ISPCVaryingPointer, *args: P.args, **kwargs: P.kwargs
+        ) -> ispc.ISPCVaryingPointer:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_ispc_uniform_pointer(
+            self, node: ispc.ISPCUniformPointer, *args: P.args, **kwargs: P.kwargs
+        ) -> ispc.ISPCUniformPointer:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_ispc_launch(
+            self, node: ispc.ISPCLaunch, *args: P.args, **kwargs: P.kwargs
+        ) -> ispc.ISPCLaunch:
         return type(node)(
-                tuple(self.map_expression(gs_i, *args, **kwargs)
-                    for gs_i in node.grid),
-                self.map_expression(node.expr, *args, **kwargs))
+            tuple(self.map_expression(gs_i, *args, **kwargs) for gs_i in node.grid),
+            self.map_expression(node.expr, *args, **kwargs))
 
     # }}}
 
     # {{{ cuda
 
-    def map_cuda_global(self, node, *args, **kwargs):
+    def map_cuda_global(
+            self, node: cuda.CudaGlobal, *args: P.args, **kwargs: P.kwargs
+        ) -> cuda.CudaGlobal:
         return type(node)(self.rec(node.subdecl, *args, **kwargs))
 
-    map_cuda_device = map_cuda_global
-    map_cuda_shared = map_cuda_global
-    map_cuda_constant = map_cuda_global
-    map_cuda_restrict_pointer = map_cuda_global
+    def map_cuda_device(
+            self, node: cuda.CudaDevice, *args: P.args, **kwargs: P.kwargs
+        ) -> cuda.CudaDevice:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
 
-    def map_cuda_launch_bounds(self, node, *args, **kwargs):
+    def map_cuda_shared(
+            self, node: cuda.CudaShared, *args: P.args, **kwargs: P.kwargs
+        ) -> cuda.CudaShared:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_cuda_constant(
+            self, node: cuda.CudaConstant, *args: P.args, **kwargs: P.kwargs
+        ) -> cuda.CudaConstant:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_cuda_restrict_pointer(
+            self, node: cuda.CudaRestrictPointer, *args: P.args, **kwargs: P.kwargs
+        ) -> cuda.CudaRestrictPointer:
+        return type(node)(self.rec(node.subdecl, *args, **kwargs))
+
+    def map_cuda_launch_bounds(
+            self, node: cuda.CudaLaunchBounds, *args: P.args, **kwargs: P.kwargs
+        ) -> cuda.CudaLaunchBounds:
         return type(node)(
                 node.max_threads_per_block,
                 self.rec(node.subdecl, *args, **kwargs),
