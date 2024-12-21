@@ -18,12 +18,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import Any, Literal, TypeAlias
+
 import numpy as np
 
-from cgen import Declarator, DeclSpecifier, NestedDeclarator, Value
+from cgen import Declarator, DeclPair, DeclSpecifier, NestedDeclarator, Value
 
 
-def dtype_to_cltype(dtype):
+def dtype_to_cltype(dtype: Any) -> str:
     if dtype is None:
         raise ValueError("dtype may not be None")
 
@@ -55,8 +57,8 @@ def dtype_to_cltype(dtype):
 # {{{ kernel
 
 class CLKernel(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__kernel")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "__kernel")
 
     mapper_method = "map_cl_kernel"
 
@@ -65,29 +67,32 @@ class CLKernel(DeclSpecifier):
 
 # {{{ kernel args
 
+Mode: TypeAlias = Literal["r"] | Literal["w"]
+
+
 class CLConstant(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__constant")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "__constant")
 
     mapper_method = "map_cl_constant"
 
 
 class CLLocal(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__local")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "__local")
 
     mapper_method = "map_cl_local"
 
 
 class CLGlobal(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "__global")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "__global")
 
     mapper_method = "map_cl_global"
 
 
 class CLImage(Value):
-    def __init__(self, dims, mode, name):
+    def __init__(self, dims: int, mode: Mode, name: str) -> None:
         if mode == "r":
             spec = "__read_only"
         elif mode == "w":
@@ -95,7 +100,7 @@ class CLImage(Value):
         else:
             raise ValueError("mode must be one of 'r' or 'w'")
 
-        Value.__init__(self, f"{spec} image{dims}d_t", name)
+        super().__init__(f"{spec} image{dims}d_t", name)
 
     mapper_method = "map_cl_image"
 
@@ -105,33 +110,42 @@ class CLImage(Value):
 # {{{ function attributes
 
 class CLVecTypeHint(NestedDeclarator):
-    def __init__(self, subdecl, dtype=None, count=None, type_str=None):
+    def __init__(self,
+                 subdecl: Declarator,
+                 dtype: Any = None,
+                 count: int | None = None,
+                 type_str: str | None = None) -> None:
         if (dtype is None) != (count is None):
-            raise ValueError("dtype and count must always be "
-                    "specified together")
+            raise ValueError(
+                "'dtype' and 'count' must always be specified together: "
+                f"dtype is '{dtype}' and count is '{count}'")
 
-        if (dtype is None and type_str is None) or \
-                (dtype is not None and type_str is not None):
-            raise ValueError("exactly one of dtype and type_str must be specified")
+        if (
+                (dtype is None and type_str is None)
+                or (dtype is not None and type_str is not None)):
+            raise ValueError(
+                "Exactly one of 'dtype' and 'type_str' must be specified: "
+                f"dtype is '{dtype}' and type_str is '{type_str}'")
 
         if type_str is None:
-            self.type_str = dtype_to_cltype(dtype)+str(count)
+            self.type_str = f"{dtype_to_cltype(dtype)}{count}"
         else:
             self.type_str = type_str
 
         super().__init__(subdecl)
 
-    def get_decl_pair(self):
+    def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("__attribute__ ((vec_type_hint({}))) {}".format(
-            sub_decl, self.type_str))
+        return sub_tp, (
+            "__attribute__ ((vec_type_hint({}))) {}"
+            .format(sub_decl, self.type_str))
 
     mapper_method = "map_cl_vec_type_hint"
 
 
 class _CLWorkGroupSizeDeclarator(NestedDeclarator):
-    def __init__(self, dim, subdecl):
-        NestedDeclarator.__init__(self, subdecl)
+    def __init__(self, dim: tuple[int, ...], subdecl: Declarator) -> None:
+        super().__init__(subdecl)
 
         while len(dim) < 3:
             dim = (*dim, 1)
@@ -143,10 +157,12 @@ class CLWorkGroupSizeHint(_CLWorkGroupSizeDeclarator):
     """
     See Sec 6.7.2 of OpenCL 2.0 spec, Version V2.2-11.
     """
-    def get_decl_pair(self):
+
+    def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("__attribute__ ((work_group_size_hint({}))) {}".format(
-            ", ".join(str(d) for d in self.dim), sub_decl))
+        return sub_tp, (
+            "__attribute__ ((work_group_size_hint({}))) {}"
+            .format(", ".join(str(d) for d in self.dim), sub_decl))
 
     mapper_method = "map_cl_workgroup_size_hint"
 
@@ -155,10 +171,12 @@ class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
     """
     See Sec 6.7.2 of OpenCL 2.0 spec, Version V2.2-11.
     """
-    def get_decl_pair(self):
+
+    def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
-        return sub_tp, ("__attribute__ ((reqd_work_group_size({}))) {}".format(
-            ", ".join(str(d) for d in self.dim), sub_decl))
+        return sub_tp, (
+            "__attribute__ ((reqd_work_group_size({}))) {}"
+            .format(", ".join(str(d) for d in self.dim), sub_decl))
 
     mapper_method = "map_cl_required_wokgroup_size"
 
@@ -168,26 +186,26 @@ class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
 # {{{ vector PODs
 
 class CLVectorPOD(Declarator):
-    def __init__(self, dtype, count, name):
+    def __init__(self, dtype: Any, count: int, name: str) -> None:
         self.dtype = np.dtype(dtype)
         self.count = count
         self.name = name
 
-    def get_decl_pair(self):
-        return [dtype_to_cltype(self.dtype)+str(self.count)], self.name
+    def get_decl_pair(self) -> DeclPair:
+        return [f"{dtype_to_cltype(self.dtype)}{self.count}"], self.name
 
-    def struct_maker_code(self, name):
+    def struct_maker_code(self, name: str) -> str:
         return name
 
-    def struct_format(self):
-        return str(self.count)+self.dtype.char
+    def struct_format(self) -> str:
+        return f"{self.count}{self.dtype.char}"
 
-    def alignment_requirement(self):
+    def alignment_requirement(self) -> int:
         from struct import calcsize
         return calcsize(self.struct_format())
 
-    def default_value(self):
-        return [0]*self.count
+    def default_value(self) -> Any:
+        return [0] * self.count
 
     mapper_method = "map_cl_vector_pod"
 
