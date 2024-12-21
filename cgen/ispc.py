@@ -20,39 +20,41 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from cgen import DeclSpecifier, Pointer, Statement
+from collections.abc import Sequence
+
+from cgen import Declarator, DeclPair, DeclSpecifier, Pointer, Statement
 
 
 class ISPCVarying(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "varying")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "varying")
 
     mapper_method = "map_ispc_varying"
 
 
 class ISPCUniform(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "uniform")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "uniform")
 
     mapper_method = "map_ispc_uniform"
 
 
 class ISPCExport(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "export")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "export")
 
     mapper_method = "map_ispc_export"
 
 
 class ISPCTask(DeclSpecifier):
-    def __init__(self, subdecl):
-        DeclSpecifier.__init__(self, subdecl, "task")
+    def __init__(self, subdecl: Declarator) -> None:
+        super().__init__(subdecl, "task")
 
     mapper_method = "map_ispc_task"
 
 
 class ISPCVaryingPointer(Pointer):
-    def get_decl_pair(self):
+    def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"*varying {sub_decl}"
 
@@ -60,7 +62,7 @@ class ISPCVaryingPointer(Pointer):
 
 
 class ISPCUniformPointer(Pointer):
-    def get_decl_pair(self):
+    def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"*uniform {sub_decl}"
 
@@ -68,16 +70,14 @@ class ISPCUniformPointer(Pointer):
 
 
 class ISPCLaunch(Statement):
-    def __init__(self, grid, expr):
-        self.grid = grid
-        self.expr = expr
-
-    def generate(self):
-        if self.grid:
-            launch_spec = "[{}]".format(", ".join(str(gs_i) for gs_i in self.grid))
+    def __init__(self, grid: Sequence[str | int], expr: str) -> None:
+        if grid:
+            launch_spec = "[{}]".format(", ".join(str(gs_i) for gs_i in grid))
         else:
             launch_spec = ""
 
-        yield f"launch{launch_spec} {self.expr};"
+        super().__init__(f"launch{launch_spec} {expr}")
+        self.grid = grid
+        self.expr = expr
 
     mapper_method = "map_ispc_launch"
