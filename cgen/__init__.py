@@ -29,18 +29,22 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
+from typing_extensions import override
 
 from pytools import memoize, memoize_method
 
 
-try:
-    # NOTE: pycuda still needs this for complex number support.
-    import pycuda._pvt_struct as _struct
-except ImportError:
-    import struct as _struct
-
 if TYPE_CHECKING:
+    import struct as _struct
     from collections.abc import Callable, Iterable, Iterator, Sequence
+
+    from numpy.typing import DTypeLike
+else:
+    try:
+        # NOTE: pycuda still needs this for complex number support.
+        import pycuda._pvt_struct as _struct
+    except ImportError:
+        import struct as _struct
 
 
 @memoize
@@ -48,7 +52,7 @@ def is_long_64_bit() -> bool:
     return bool(_struct.calcsize("l") == 8)
 
 
-def dtype_to_ctype(dtype: Any) -> str:
+def dtype_to_ctype(dtype: DTypeLike) -> str:
     if dtype is None:
         raise ValueError("dtype may not be None")
 
@@ -92,6 +96,7 @@ def dtype_to_ctype(dtype: Any) -> str:
 class Generable(ABC):
     mapper_method: ClassVar[str]
 
+    @override
     def __str__(self) -> str:
         """
         :returns: a single string (possibly containing newlines) representing
@@ -110,6 +115,7 @@ DeclPair: TypeAlias = tuple[list[str], str | None]
 
 
 class Declarator(Generable, ABC):
+    @override
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         tp_lines, tp_decl = self.get_decl_pair()
 
@@ -163,52 +169,61 @@ class POD(Declarator):
     """
 
     def __init__(self, dtype: Any, name: str) -> None:
-        self.dtype = np.dtype(dtype)
-        self.name = name
+        self.dtype: np.dtype[Any] = np.dtype(dtype)
+        self.name: str = name
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         return [dtype_to_ctype(self.dtype)], self.name
 
-    def struct_maker_code(self, name: str) -> str:
-        return name
+    @override
+    def struct_maker_code(self, data: str) -> str:
+        return data
 
+    @override
     def struct_format(self) -> str:
         return str(self.dtype.char)
 
+    @override
     def alignment_requirement(self) -> int:
         return int(_struct.calcsize(self.struct_format()))
 
+    @override
     def default_value(self) -> Any:
         return 0
 
-    mapper_method = "map_pod"
+    mapper_method: ClassVar[str] = "map_pod"
 
 
 class Value(Declarator):
     """A simple declarator: *typename* and *name* are given as strings."""
 
     def __init__(self, typename: str, name: str) -> None:
-        self.typename = typename
-        self.name = name
+        self.typename: str = typename
+        self.name: str = name
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         return [self.typename], self.name
 
-    def struct_maker_code(self, name: str) -> str:
+    @override
+    def struct_maker_code(self, data: str) -> str:
         raise RuntimeError("named-type values can't be put into structs")
 
+    @override
     def struct_format(self) -> str:
         raise RuntimeError("named-type values have no struct format")
 
+    @override
     def default_value(self) -> Any:
         return 0
 
-    mapper_method = "map_value"
+    mapper_method: ClassVar[str] = "map_value"
 
 
 class NestedDeclarator(Declarator):
     def __init__(self, subdecl: Declarator) -> None:
-        self.subdecl = subdecl
+        self.subdecl: Declarator = subdecl
 
     @property
     def name(self) -> str:
@@ -217,15 +232,19 @@ class NestedDeclarator(Declarator):
 
         raise AttributeError("name")
 
+    @override
     def struct_format(self) -> str:
         return self.subdecl.struct_format()
 
+    @override
     def alignment_requirement(self) -> int:
         return self.subdecl.alignment_requirement()
 
+    @override
     def struct_maker_code(self, data: str) -> str:
         return self.subdecl.struct_maker_code(data)
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         return self.subdecl.get_decl_pair()
 
@@ -233,9 +252,11 @@ class NestedDeclarator(Declarator):
 class DeclSpecifier(NestedDeclarator):
     def __init__(self, subdecl: Declarator, spec: str, sep: str = " ") -> None:
         super().__init__(subdecl)
-        self.spec = spec
-        self.sep = sep
 
+        self.spec: str = spec
+        self.sep: str = sep
+
+    @override
     def get_decl_pair(self) -> DeclPair:
         def add_spec(sub_it: list[str]) -> Iterator[str]:
             it = iter(sub_it)
@@ -258,66 +279,70 @@ class NamespaceQualifier(DeclSpecifier):
     def namespace(self) -> str:
         return self.spec
 
-    mapper_method = "map_namespace_qualifier"
+    mapper_method: ClassVar[str] = "map_namespace_qualifier"
 
 
 class Typedef(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "typedef")
 
-    mapper_method = "map_typedef"
+    mapper_method: ClassVar[str] = "map_typedef"
 
 
 class Static(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "static")
 
-    mapper_method = "map_static"
+    mapper_method: ClassVar[str] = "map_static"
 
 
 class Const(NestedDeclarator):
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"const {sub_decl}"
 
-    mapper_method = "map_const"
+    mapper_method: ClassVar[str] = "map_const"
 
 
 class Volatile(NestedDeclarator):
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"volatile {sub_decl}"
 
-    mapper_method = "map_volatile"
+    mapper_method: ClassVar[str] = "map_volatile"
 
 
 class Extern(DeclSpecifier):
     def __init__(self, language: str, subdecl: Declarator) -> None:
-        self.language = language
         super().__init__(subdecl, f'extern "{language}"')
+        self.language: str = language
 
-    mapper_method = "map_extern"
+    mapper_method: ClassVar[str] = "map_extern"
 
 
 class TemplateSpecializer(NestedDeclarator):
     def __init__(self, specializer: str, subdecl: Declarator) -> None:
-        self.specializer = specializer
         super().__init__(subdecl)
+        self.specializer: str = specializer
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         sub_tp[-1] = f"{sub_tp[-1]}<{self.specializer}>"
         return sub_tp, sub_decl
 
-    mapper_method = "map_template_specializer"
+    mapper_method: ClassVar[str] = "map_template_specializer"
 
 
 class MaybeUnused(NestedDeclarator):
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"{sub_decl} __attribute__ ((unused))"
 
-    mapper_method = "map_maybe_unused"
+    mapper_method: ClassVar[str] = "map_maybe_unused"
 
 
 class AlignedAttribute(NestedDeclarator):
@@ -326,13 +351,14 @@ class AlignedAttribute(NestedDeclarator):
     """
     def __init__(self, align_bytes: int, subdecl: Declarator) -> None:
         super().__init__(subdecl)
-        self.align_bytes = align_bytes
+        self.align_bytes: int = align_bytes
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"{sub_decl} __attribute__ ((aligned ({self.align_bytes})))"
 
-    mapper_method = "map_aligned"
+    mapper_method: ClassVar[str] = "map_aligned"
 
 
 class AlignValueAttribute(NestedDeclarator):
@@ -354,54 +380,62 @@ class AlignValueAttribute(NestedDeclarator):
     """
     def __init__(self, align_bytes: int, subdecl: Declarator) -> None:
         super().__init__(subdecl)
-        self.align_bytes = align_bytes
+        self.align_bytes: int = align_bytes
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return (sub_tp,
             f"{sub_decl} __attribute__ ((align_value ({self.align_bytes})))")
 
-    mapper_method = "map_align_value"
+    mapper_method: ClassVar[str] = "map_align_value"
 
 
 class Pointer(NestedDeclarator):
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"*{sub_decl}"
 
+    @override
     def struct_maker_code(self, data: str) -> str:
         raise NotImplementedError
 
+    @override
     def struct_format(self) -> str:
         return "P"
 
+    @override
     def alignment_requirement(self) -> int:
         return int(_struct.calcsize(self.struct_format()))
 
-    mapper_method = "map_pointer"
+    mapper_method: ClassVar[str] = "map_pointer"
 
 
 class RestrictPointer(Pointer):
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"*__restrict__ {sub_decl}"
 
-    mapper_method = "map_restrict_pointer"
+    mapper_method: ClassVar[str] = "map_restrict_pointer"
 
 
 class Reference(Pointer):
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"&{sub_decl}"
 
-    mapper_method = "map_reference"
+    mapper_method: ClassVar[str] = "map_reference"
 
 
 class ArrayOf(NestedDeclarator):
     def __init__(self, subdecl: Declarator, count: int | None = None) -> None:
         super().__init__(subdecl)
-        self.count = count
+        self.count: int | None = count
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         if self.count is None:
@@ -410,35 +444,40 @@ class ArrayOf(NestedDeclarator):
             count_str = str(self.count)
         return sub_tp, f"{sub_decl}[{count_str}]"
 
-    def struct_maker_code(self, name: str) -> str:
+    @override
+    def struct_maker_code(self, data: str) -> str:
         if self.count is None:
-            return name
+            return data
 
-        return ", ".join(f"{name}[{i}]" for i in range(self.count))
+        return ", ".join(f"{data}[{i}]" for i in range(self.count))
 
+    @override
     def struct_format(self) -> str:
         if self.count is None:
             return "P"
         else:
             return f"{self.count}{self.subdecl.struct_format()}"
 
+    @override
     def alignment_requirement(self) -> int:
         return self.subdecl.alignment_requirement()
 
+    @override
     def default_value(self) -> Any:
         if self.count is None:
             return []
 
         return self.count*[self.subdecl.default_value()]
 
-    mapper_method = "map_array_of"
+    mapper_method: ClassVar[str] = "map_array_of"
 
 
 class FunctionDeclaration(NestedDeclarator):
     def __init__(self, subdecl: Declarator, arg_decls: Sequence[Declarator]) -> None:
         super().__init__(subdecl)
-        self.arg_decls = tuple(arg_decls)
+        self.arg_decls: tuple[Declarator, ...] = tuple(arg_decls)
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
 
@@ -446,13 +485,15 @@ class FunctionDeclaration(NestedDeclarator):
             sub_decl,
             ", ".join(ad.inline() for ad in self.arg_decls)))
 
+    @override
     def struct_maker_code(self, data: str) -> str:
         raise RuntimeError("function pointers can't be put into structs")
 
+    @override
     def struct_format(self) -> str:
         raise RuntimeError("function pointers have no struct format")
 
-    mapper_method = "map_function_declaration"
+    mapper_method: ClassVar[str] = "map_function_declaration"
 
 # }}}
 
@@ -463,7 +504,7 @@ class Struct(Declarator):
     """A structure declarator."""
 
     def __init__(self,
-                 tpname: str,
+                 tpname: str | None,
                  fields: Sequence[Declarator],
                  declname: str | None = None,
                  pad_bytes: int = 0) -> None:
@@ -475,11 +516,12 @@ class Struct(Declarator):
         :arg pad_bytes: the number of padding bytes added at the end of the structure.
         """
 
-        self.tpname = tpname
-        self.fields = tuple(fields)
-        self.declname = declname
-        self.pad_bytes = pad_bytes
+        self.tpname: str | None = tpname
+        self.fields: tuple[Declarator, ...] = tuple(fields)
+        self.declname: str | None = declname
+        self.pad_bytes: int = pad_bytes
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         def get_tp() -> Iterator[str]:
             if self.tpname is not None:
@@ -500,18 +542,19 @@ class Struct(Declarator):
 
         return list(get_tp()), self.declname
 
+    @override
     def alignment_requirement(self) -> int:
         return max((f.alignment_requirement() for f in self.fields), default=0)
 
     def struct_attributes(self) -> str:
         return ""
 
-    mapper_method = "map_struct"
+    mapper_method: ClassVar[str] = "map_struct"
 
 
 class GenerableStruct(Struct):
     def __init__(self,
-                 tpname: str,
+                 tpname: str | None,
                  fields: Sequence[Declarator],
                  declname: str | None = None,
                  align_bytes: int | None = None,
@@ -560,15 +603,16 @@ class GenerableStruct(Struct):
 
         super().__init__(tpname, fields, declname, padded_bytes - nbytes)
 
-        self.align_bytes = align_bytes
-        self.aligned_prime_to = aligned_prime_to
-
         if self.pad_bytes:
-            self.format = format + f"{self.pad_bytes}x"
-            self.bytes = padded_bytes
+            format = f"{format}{self.pad_bytes}x"
+            nbytes = padded_bytes
         else:
-            self.format = format
-            self.bytes = nbytes
+            format = format
+
+        self.align_bytes: int = align_bytes
+        self.aligned_prime_to: tuple[int, ...] = aligned_prime_to
+        self.format: str = format
+        self.bytes: int = nbytes
 
         assert _struct.calcsize(self.format) == self.bytes
 
@@ -576,6 +620,7 @@ class GenerableStruct(Struct):
     # def struct_attributes(self):
     #     return "__attribute__ ((packed))"
 
+    @override
     def alignment_requirement(self) -> int:
         return self.align_bytes
 
@@ -598,20 +643,19 @@ class GenerableStruct(Struct):
     @memoize_method
     def _maker(self, with_defaults: bool = False) -> Callable[..., str]:
         def format_arg(f: Declarator) -> str:
-            # FIXME: should this be narrowed from "Declarator"?
-            assert hasattr(f, "name")
             if with_defaults:
                 return f"{f.name}={f.default_value()!r}"
             else:
-                return str(f.name)
+                return f.name
 
         code = "lambda pack, {}: pack({}, {})".format(
                 ", ".join(format_arg(f) for f in self.fields),
                 repr(self.struct_format()),
-                ", ".join(f.struct_maker_code(f.name) for f in self.fields))  # type: ignore[attr-defined]
+                ", ".join(f.struct_maker_code(f.name) for f in self.fields))
 
-        return eval(code)  # type: ignore[no-any-return]
+        return eval(code)
 
+    @override
     def struct_format(self) -> str:
         """Return the format of the struct as digested by the :mod:`struct`
         module.
@@ -622,7 +666,7 @@ class GenerableStruct(Struct):
         """Return the number of bytes occupied by this struct."""
         return int(self.bytes)
 
-    mapper_method = "map_generable_struct"
+    mapper_method: ClassVar[str] = "map_generable_struct"
 
 
 class Enum(Generable):
@@ -681,8 +725,9 @@ class Enum(Generable):
     def get_c_typedef(cls) -> str:
         return f"\n\n{cls.get_c_typedef_line()}\n\n"
 
+    @override
     @classmethod
-    def generate(cls, with_semicolon: bool = True) -> Iterator[str]:
+    def generate(cls, with_semicolon: bool = True) -> Iterator[str]:  # pyright: ignore[reportIncompatibleMethodOverride]
         yield cls.get_c_typedef_line()
         yield from cls.get_c_defines_lines()
 
@@ -702,14 +747,15 @@ class Enum(Generable):
 
 class Template(NestedDeclarator):
     def __init__(self, template_spec: str, subdecl: Declarator) -> None:
-        self.template_spec = template_spec
-        self.subdecl = subdecl
+        super().__init__(subdecl)
+        self.template_spec: str = template_spec
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield f"template <{self.template_spec}>"
         yield from self.subdecl.generate(with_semicolon=with_semicolon)
 
-    mapper_method = "map_template"
+    mapper_method: ClassVar[str] = "map_template"
 
 # }}}
 
@@ -725,10 +771,11 @@ class If(Generable):
         if else_ is not None:
             assert isinstance(else_, Generable)
 
-        self.condition = condition
-        self.then_ = then_
-        self.else_ = else_
+        self.condition: str = condition
+        self.then_: Generable = then_
+        self.else_: Generable | None = else_
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         cond_str = str(self.condition)
         condition_lines = cond_str.split("\n")
@@ -757,16 +804,17 @@ class If(Generable):
                 for line in self.else_.generate():
                     yield f"  {line}"
 
-    mapper_method = "map_if"
+    mapper_method: ClassVar[str] = "map_if"
 
 
 class Loop(Generable):
     def __init__(self, body: Generable) -> None:
-        self.body = body
+        self.body: Generable = body
 
     def intro_line(self) -> str | None:
         raise NotImplementedError
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         intro_line = self.intro_line()
         if intro_line is not None:
@@ -792,63 +840,65 @@ class CustomLoop(Loop):
                  intro_line: str | None,
                  body: Generable,
                  outro_line: str | None = None) -> None:
-        self.intro_line_ = intro_line
-        self.body = body
-        self.outro_line_ = outro_line
+        super().__init__(body)
 
+        self.intro_line_: str | None = intro_line
+        self.outro_line_: str | None = outro_line
+
+    @override
     def intro_line(self) -> str | None:
         return self.intro_line_
 
+    @override
     def outro_line(self) -> str | None:
         return self.outro_line_
 
-    mapper_method = "map_custom_loop"
+    mapper_method: ClassVar[str] = "map_custom_loop"
 
 
 class While(Loop):
     def __init__(self, condition: str, body: Generable) -> None:
-        assert isinstance(body, Generable)
+        super().__init__(body)
 
-        self.condition = condition
-        self.body = body
+        self.condition: str = condition
 
+    @override
     def intro_line(self) -> str | None:
         return f"while ({self.condition})"
 
-    mapper_method = "map_while"
+    mapper_method: ClassVar[str] = "map_while"
 
 
 class For(Loop):
     def __init__(self,
                  start: str, condition: str, update: str,
                  body: Generable) -> None:
-        self.start = start
-        self.condition = condition
-        self.update = update
+        super().__init__(body)
+        self.start: str = start
+        self.condition: str = condition
+        self.update: str = update
 
-        assert isinstance(body, Generable)
-        self.body = body
-
+    @override
     def intro_line(self) -> str | None:
         return f"for ({self.start}; {self.condition}; {self.update})"
 
-    mapper_method = "map_for"
+    mapper_method: ClassVar[str] = "map_for"
 
 
 class DoWhile(Loop):
     def __init__(self, condition: str, body: Generable) -> None:
-        assert isinstance(body, Generable)
+        super().__init__(body)
+        self.condition: str = condition
 
-        self.condition = condition
-        self.body = body
-
+    @override
     def intro_line(self) -> str | None:
         return "do"
 
+    @override
     def outro_line(self) -> str | None:
         return f"while ({self.condition});"
 
-    mapper_method = "map_do_while"
+    mapper_method: ClassVar[str] = "map_do_while"
 
 
 def make_multiple_ifs(conditions_and_blocks: Sequence[tuple[str, Generable]],
@@ -870,102 +920,113 @@ def make_multiple_ifs(conditions_and_blocks: Sequence[tuple[str, Generable]],
 
 class Define(Generable):
     def __init__(self, symbol: str, value: str) -> None:
-        self.symbol = symbol
-        self.value = value
+        self.symbol: str = symbol
+        self.value: str = value
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield f"#define {self.symbol} {self.value}"
 
-    mapper_method = "map_define"
+    mapper_method: ClassVar[str] = "map_define"
 
 
 class Include(Generable):
     def __init__(self, filename: str, system: bool = True) -> None:
-        self.filename = filename
-        self.system = system
+        self.filename: str = filename
+        self.system: bool = system
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         if self.system:
             yield f"#include <{self.filename}>"
         else:
             yield f'#include "{self.filename}"'
 
-    mapper_method = "map_include"
+    mapper_method: ClassVar[str] = "map_include"
 
 
 class Pragma(Generable):
     def __init__(self, value: str) -> None:
-        self.value = value
+        self.value: str = value
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield f"#pragma {self.value}"
 
-    mapper_method = "map_pragma"
+    mapper_method: ClassVar[str] = "map_pragma"
 
 
 class Statement(Generable):
     def __init__(self, text: str) -> None:
-        self.text = text
+        self.text: str = text
 
+    @override
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         sc = ";" if with_semicolon else ""
         yield f"{self.text}{sc}"
 
-    mapper_method = "map_statement"
+    mapper_method: ClassVar[str] = "map_statement"
 
 
 class ExpressionStatement(Generable):
     def __init__(self, expr: str) -> None:
-        self.expr = expr
+        self.expr: str = expr
 
+    @override
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         sc = ";" if with_semicolon else ""
         yield f"{self.expr}{sc}"
 
-    mapper_method = "map_expression_statement"
+    mapper_method: ClassVar[str] = "map_expression_statement"
 
 
 class Assign(Generable):
     def __init__(self, lvalue: str, rvalue: str) -> None:
-        self.lvalue = lvalue
-        self.rvalue = rvalue
+        self.lvalue: str = lvalue
+        self.rvalue: str = rvalue
 
+    @override
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         sc = ";" if with_semicolon else ""
         yield f"{self.lvalue} = {self.rvalue}{sc}"
 
-    mapper_method = "map_assignment"
+    mapper_method: ClassVar[str] = "map_assignment"
 
 
 class Line(Generable):
     def __init__(self, text: str = "") -> None:
-        self.text = text
+        self.text: str = text
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield self.text
 
-    mapper_method = "map_line"
+    mapper_method: ClassVar[str] = "map_line"
 
 
 class Comment(Generable):
     def __init__(self, text: str, skip_space: bool = False) -> None:
-        self.text = text
         if skip_space:
-            self.fmt_str = "/*{comment}*/"
+            fmt_str = "/*{comment}*/"
         else:
-            self.fmt_str = "/* {comment} */"
+            fmt_str = "/* {comment} */"
 
+        self.text: str = text
+        self.fmt_str: str = fmt_str
+
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield self.fmt_str.format(comment=self.text)
 
-    mapper_method = "map_comment"
+    mapper_method: ClassVar[str] = "map_comment"
 
 
 class MultilineComment(Generable):
     def __init__(self, text: str, skip_space: bool = False) -> None:
-        self.text = text
-        self.skip_space = skip_space
+        self.text: str = text
+        self.skip_space: bool = skip_space
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield "/**"
 
@@ -979,18 +1040,19 @@ class MultilineComment(Generable):
 
         yield comment_end
 
-    mapper_method = "map_multiline_comment"
+    mapper_method: ClassVar[str] = "map_multiline_comment"
 
 
 class LineComment(Generable):
     def __init__(self, text: str) -> None:
         assert "\n" not in text
-        self.text = text
+        self.text: str = text
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield f"// {self.text}"
 
-    mapper_method = "map_line_comment"
+    mapper_method: ClassVar[str] = "map_line_comment"
 
 
 def add_comment(comment: str | None, stmt: Generable) -> Generable:
@@ -1011,9 +1073,10 @@ def add_comment(comment: str | None, stmt: Generable) -> Generable:
 
 class Initializer(Generable):
     def __init__(self, vdecl: Declarator, data: str) -> None:
-        self.vdecl = vdecl
-        self.data = data
+        self.vdecl: Declarator = vdecl
+        self.data: str = data
 
+    @override
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         tp_lines, tp_decl = self.vdecl.get_decl_pair()
         tp_lines = list(tp_lines)
@@ -1031,7 +1094,7 @@ class Initializer(Generable):
         else:
             yield f"{tp_lines[-1]} {tp_decl} = {self.data}{sc}"
 
-    mapper_method = "map_initializer"
+    mapper_method: ClassVar[str] = "map_initializer"
 
 
 class InlineInitializer(Initializer):
@@ -1041,6 +1104,8 @@ class InlineInitializer(Initializer):
     Usage: same as cgen.Initializer
     Result: same as cgen.Initializer except for the lack of a semi-colon at the end
     """
+
+    @override
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         for v in super().generate(with_semicolon=with_semicolon):
             if v.endswith(";"):
@@ -1055,16 +1120,17 @@ def Constant(vdecl: Declarator, data: str) -> Initializer:  # noqa: N802
 
 class ArrayInitializer(Generable):
     def __init__(self, vdecl: Declarator, data: Sequence[str]) -> None:
-        self.vdecl = vdecl
-        self.data = tuple(data)
+        self.vdecl: Declarator = vdecl
+        self.data: tuple[str, ...] = tuple(data)
 
+    @override
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         yield from self.vdecl.generate(with_semicolon=False)
 
         sc = ";" if with_semicolon else ""
         yield "  = { %s }%s" % (", ".join(str(item) for item in self.data), sc)
 
-    mapper_method = "map_array_initializer"
+    mapper_method: ClassVar[str] = "map_array_initializer"
 
 
 class FunctionBody(Generable):
@@ -1073,14 +1139,15 @@ class FunctionBody(Generable):
     def __init__(self, fdecl: NestedDeclarator, body: Block) -> None:
         """Initialize a function definition."""
 
-        self.fdecl = fdecl
-        self.body = body
+        self.fdecl: NestedDeclarator = fdecl
+        self.body: Block = body
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield from self.fdecl.generate(with_semicolon=False)
         yield from self.body.generate()
 
-    mapper_method = "map_function_body"
+    mapper_method: ClassVar[str] = "map_function_body"
 
 # }}}
 
@@ -1099,6 +1166,7 @@ class Block(Generable):
         for item in self.contents:
             assert isinstance(item, Generable)
 
+    @override
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         yield "{"
         for item in self.contents:
@@ -1120,7 +1188,7 @@ class Block(Generable):
         self.contents.extend(data)
         self.contents.append(Line())
 
-    mapper_method = "map_block"
+    mapper_method: ClassVar[str] = "map_block"
 
 
 def block_if_necessary(contents: Sequence[Generable]) -> Generable:
@@ -1141,12 +1209,12 @@ class LiteralLines(Generable):
 
         lines = text.split("\n")
         while lines[0].strip() == "":
-            lines.pop(0)
+            _ = lines.pop(0)
         while lines[-1].strip() == "":
-            lines.pop(-1)
+            _ = lines.pop(-1)
 
+        base_indent = 0
         if lines:
-            base_indent = 0
             while lines[0][base_indent] in " \t":
                 base_indent += 1
 
@@ -1154,15 +1222,17 @@ class LiteralLines(Generable):
                 if line[:base_indent].strip():
                     raise ValueError("Inconsistent indentation")
 
-        self.lines = [line[base_indent:] for line in lines]
+        self.lines: list[str] = [line[base_indent:] for line in lines]
 
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield from self.lines
 
-    mapper_method = "map_literal_lines"
+    mapper_method: ClassVar[str] = "map_literal_lines"
 
 
 class LiteralBlock(LiteralLines):
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         yield "{"
         for line in self.lines:
@@ -1171,6 +1241,7 @@ class LiteralBlock(LiteralLines):
 
 
 class Collection(Block):
+    @override
     def generate(self, with_semicolon: bool = False) -> Iterator[str]:
         for c in self.contents:
             yield from c.generate()
@@ -1202,7 +1273,7 @@ class IfDef(Module):
         lines = [ifdef_line, *iflines, *elselines, endif_line]
         super().__init__(lines)
 
-    mapper_method = "map_ifdef"
+    mapper_method: ClassVar[str] = "map_ifdef"
 
 
 class IfNDef(Module):
@@ -1226,7 +1297,7 @@ class IfNDef(Module):
         lines = [ifndefdef_line, *ifndeflines, *elselines, Line("#endif")]
         super().__init__(lines)
 
-    mapper_method = "map_ifndef"
+    mapper_method: ClassVar[str] = "map_ifndef"
 
 
 class PrivateNamespace(Block):
@@ -1240,6 +1311,7 @@ class PrivateNamespace(Block):
 
         return f"private_namespace_{checksum.hexdigest()}"
 
+    @override
     def generate(self, with_semicolon: bool = True) -> Iterator[str]:
         name = self.get_namespace_name()
 

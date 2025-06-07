@@ -205,3 +205,10 @@ Vector PODs
 
 .. autoclass:: CLVectorPOD
     :show-inheritance:
+
+References
+----------
+
+.. class:: DTypeLike
+
+    See :data:`numpy.typing.DTypeLike`.

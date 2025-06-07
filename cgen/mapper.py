@@ -25,6 +25,8 @@ THE SOFTWARE.
 
 from typing import Any, Generic, ParamSpec, TypeVar, cast
 
+from typing_extensions import override
+
 import cgen
 from cgen import cuda, ispc, opencl as cl
 
@@ -50,7 +52,7 @@ class ASTMapper(Generic[P, R]):
         """
 
         try:
-            method = getattr(self, node.mapper_method)  # type: ignore[attr-defined]
+            method = getattr(self, node.mapper_method)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownArgumentType]
         except AttributeError:
             return self.handle_unsupported(node, *args, **kwargs)
 
@@ -65,11 +67,13 @@ class ASTMapper(Generic[P, R]):
         raise UnsupportedNodeError(
             f"{type(self)} cannot handle nodes of type {type(node)}")
 
-    rec = __call__
+    def rec(self, node: object, *args: P.args, **kwargs: P.kwargs) -> R:
+        return self(node, *args, **kwargs)
 
 
 class IdentityMapper(ASTMapper[P, cgen.Generable]):
-    def rec(self, node: R, *args: P.args, **kwargs: P.kwargs) -> R:  # type: ignore[override]
+    @override
+    def rec(self, node: R, *args: P.args, **kwargs: P.kwargs) -> R:  # pyright: ignore[reportIncompatibleMethodOverride]
         return cast("R", super().rec(node, *args, **kwargs))
 
     def map_expression(

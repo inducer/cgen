@@ -18,9 +18,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from typing import Any, Literal, TypeAlias
+from typing import Any, ClassVar, Literal, TypeAlias
 
 import numpy as np
+from typing_extensions import override
 
 from cgen import Declarator, DeclPair, DeclSpecifier, NestedDeclarator, Value
 
@@ -29,7 +30,7 @@ def dtype_to_cltype(dtype: Any) -> str:
     if dtype is None:
         raise ValueError("dtype may not be None")
 
-    dtype = np.dtype(dtype)
+    dtype = np.dtype(dtype)  # pyright: ignore[reportUnknownVariableType]
     if dtype == np.int64:
         return "long"
     elif dtype == np.uint64:
@@ -60,7 +61,7 @@ class CLKernel(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "__kernel")
 
-    mapper_method = "map_cl_kernel"
+    mapper_method: ClassVar[str] = "map_cl_kernel"
 
 # }}}
 
@@ -74,21 +75,21 @@ class CLConstant(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "__constant")
 
-    mapper_method = "map_cl_constant"
+    mapper_method: ClassVar[str] = "map_cl_constant"
 
 
 class CLLocal(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "__local")
 
-    mapper_method = "map_cl_local"
+    mapper_method: ClassVar[str] = "map_cl_local"
 
 
 class CLGlobal(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "__global")
 
-    mapper_method = "map_cl_global"
+    mapper_method: ClassVar[str] = "map_cl_global"
 
 
 class CLImage(Value):
@@ -98,11 +99,11 @@ class CLImage(Value):
         elif mode == "w":
             spec = "__write_only"
         else:
-            raise ValueError("mode must be one of 'r' or 'w'")
+            raise ValueError("mode must be one of 'r' or 'w'")  # pyright: ignore[reportUnreachable]
 
         super().__init__(f"{spec} image{dims}d_t", name)
 
-    mapper_method = "map_cl_image"
+    mapper_method: ClassVar[str] = "map_cl_image"
 
 # }}}
 
@@ -127,24 +128,24 @@ class CLVecTypeHint(NestedDeclarator):
                 "Exactly one of 'dtype' and 'type_str' must be specified: "
                 f"dtype is '{dtype}' and type_str is '{type_str}'")
 
-        dtype = np.dtype(dtype)
+        self.dtype: np.dtype[Any] = np.dtype(dtype)
         if type_str is None:
-            type_str = f"{dtype_to_cltype(dtype)}{count}"
+            type_str = f"{dtype_to_cltype(self.dtype)}{count}"
         else:
             type_str = type_str
 
         super().__init__(subdecl)
-        self.dtype = dtype
-        self.count = count
-        self.type_str = type_str
+        self.count: int | None = count
+        self.type_str: str = type_str
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, (
             "__attribute__ ((vec_type_hint({}))) {}"
             .format(sub_decl, self.type_str))
 
-    mapper_method = "map_cl_vec_type_hint"
+    mapper_method: ClassVar[str] = "map_cl_vec_type_hint"
 
 
 class _CLWorkGroupSizeDeclarator(NestedDeclarator):
@@ -154,7 +155,7 @@ class _CLWorkGroupSizeDeclarator(NestedDeclarator):
         while len(dim) < 3:
             dim = (*dim, 1)
 
-        self.dim = dim
+        self.dim: tuple[int, ...] = dim
 
 
 class CLWorkGroupSizeHint(_CLWorkGroupSizeDeclarator):
@@ -162,13 +163,14 @@ class CLWorkGroupSizeHint(_CLWorkGroupSizeDeclarator):
     See Sec 6.7.2 of OpenCL 2.0 spec, Version V2.2-11.
     """
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, (
             "__attribute__ ((work_group_size_hint({}))) {}"
             .format(", ".join(str(d) for d in self.dim), sub_decl))
 
-    mapper_method = "map_cl_workgroup_size_hint"
+    mapper_method: ClassVar[str] = "map_cl_workgroup_size_hint"
 
 
 class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
@@ -176,13 +178,14 @@ class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
     See Sec 6.7.2 of OpenCL 2.0 spec, Version V2.2-11.
     """
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, (
             "__attribute__ ((reqd_work_group_size({}))) {}"
             .format(", ".join(str(d) for d in self.dim), sub_decl))
 
-    mapper_method = "map_cl_required_wokgroup_size"
+    mapper_method: ClassVar[str] = "map_cl_required_wokgroup_size"
 
 # }}}
 
@@ -191,27 +194,32 @@ class CLRequiredWorkGroupSize(_CLWorkGroupSizeDeclarator):
 
 class CLVectorPOD(Declarator):
     def __init__(self, dtype: Any, count: int, name: str) -> None:
-        self.dtype = np.dtype(dtype)
-        self.count = count
-        self.name = name
+        self.dtype: np.dtype[Any] = np.dtype(dtype)
+        self.count: int = count
+        self.name: str = name
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         return [f"{dtype_to_cltype(self.dtype)}{self.count}"], self.name
 
-    def struct_maker_code(self, name: str) -> str:
-        return name
+    @override
+    def struct_maker_code(self, data: str) -> str:
+        return data
 
+    @override
     def struct_format(self) -> str:
         return f"{self.count}{self.dtype.char}"
 
+    @override
     def alignment_requirement(self) -> int:
         from struct import calcsize
         return calcsize(self.struct_format())
 
+    @override
     def default_value(self) -> Any:
         return [0] * self.count
 
-    mapper_method = "map_cl_vector_pod"
+    mapper_method: ClassVar[str] = "map_cl_vector_pod"
 
 # }}}
 
