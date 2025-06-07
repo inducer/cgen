@@ -18,6 +18,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
+from typing import ClassVar
+
+from typing_extensions import override
 
 from cgen import Declarator, DeclPair, DeclSpecifier, NestedDeclarator, Pointer
 
@@ -26,36 +29,37 @@ class CudaGlobal(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "__global__")
 
-    mapper_method = "map_cuda_global"
+    mapper_method: ClassVar[str] = "map_cuda_global"
 
 
 class CudaDevice(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "__device__")
 
-    mapper_method = "map_cuda_device"
+    mapper_method: ClassVar[str] = "map_cuda_device"
 
 
 class CudaShared(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "__shared__")
 
-    mapper_method = "map_cuda_shared"
+    mapper_method: ClassVar[str] = "map_cuda_shared"
 
 
 class CudaConstant(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "__constant__")
 
-    mapper_method = "map_cuda_constant"
+    mapper_method: ClassVar[str] = "map_cuda_constant"
 
 
 class CudaRestrictPointer(Pointer):
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"*__restrict__ {sub_decl}"
 
-    mapper_method = "map_cuda_restrict_pointer"
+    mapper_method: ClassVar[str] = "map_cuda_restrict_pointer"
 
 
 class CudaLaunchBounds(NestedDeclarator):
@@ -63,11 +67,12 @@ class CudaLaunchBounds(NestedDeclarator):
                  max_threads_per_block: int,
                  subdecl: Declarator,
                  min_blocks_per_mp: int | None = None) -> None:
-        self.max_threads_per_block = max_threads_per_block
-        self.min_blocks_per_mp = min_blocks_per_mp
+        self.max_threads_per_block: int = max_threads_per_block
+        self.min_blocks_per_mp: int | None = min_blocks_per_mp
 
         super().__init__(subdecl)
 
+    @override
     def get_decl_pair(self) -> DeclPair:
         if self.min_blocks_per_mp is not None:
             lb = f"{self.max_threads_per_block}, {self.min_blocks_per_mp}"
@@ -77,4 +82,4 @@ class CudaLaunchBounds(NestedDeclarator):
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"__launch_bounds__({lb}) {sub_decl}"
 
-    mapper_method = "map_cuda_launch_bounds"
+    mapper_method: ClassVar[str] = "map_cuda_launch_bounds"

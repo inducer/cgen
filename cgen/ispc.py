@@ -21,6 +21,9 @@ THE SOFTWARE.
 """
 
 from collections.abc import Sequence
+from typing import ClassVar
+
+from typing_extensions import override
 
 from cgen import Declarator, DeclPair, DeclSpecifier, Pointer, Statement
 
@@ -29,44 +32,46 @@ class ISPCVarying(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "varying")
 
-    mapper_method = "map_ispc_varying"
+    mapper_method: ClassVar[str] = "map_ispc_varying"
 
 
 class ISPCUniform(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "uniform")
 
-    mapper_method = "map_ispc_uniform"
+    mapper_method: ClassVar[str] = "map_ispc_uniform"
 
 
 class ISPCExport(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "export")
 
-    mapper_method = "map_ispc_export"
+    mapper_method: ClassVar[str] = "map_ispc_export"
 
 
 class ISPCTask(DeclSpecifier):
     def __init__(self, subdecl: Declarator) -> None:
         super().__init__(subdecl, "task")
 
-    mapper_method = "map_ispc_task"
+    mapper_method: ClassVar[str] = "map_ispc_task"
 
 
 class ISPCVaryingPointer(Pointer):
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"*varying {sub_decl}"
 
-    mapper_method = "map_ispc_varying_pointer"
+    mapper_method: ClassVar[str] = "map_ispc_varying_pointer"
 
 
 class ISPCUniformPointer(Pointer):
+    @override
     def get_decl_pair(self) -> DeclPair:
         sub_tp, sub_decl = self.subdecl.get_decl_pair()
         return sub_tp, f"*uniform {sub_decl}"
 
-    mapper_method = "map_ispc_uniform_pointer"
+    mapper_method: ClassVar[str] = "map_ispc_uniform_pointer"
 
 
 class ISPCLaunch(Statement):
@@ -77,7 +82,7 @@ class ISPCLaunch(Statement):
             launch_spec = ""
 
         super().__init__(f"launch{launch_spec} {expr}")
-        self.grid = grid
-        self.expr = expr
+        self.grid: Sequence[str | int] = grid
+        self.expr: str = expr
 
-    mapper_method = "map_ispc_launch"
+    mapper_method: ClassVar[str] = "map_ispc_launch"
