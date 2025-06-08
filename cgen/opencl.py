@@ -30,7 +30,7 @@ def dtype_to_cltype(dtype: Any) -> str:
     if dtype is None:
         raise ValueError("dtype may not be None")
 
-    dtype = np.dtype(dtype)  # pyright: ignore[reportUnknownVariableType]
+    dtype = np.dtype(dtype)
     if dtype == np.int64:
         return "long"
     elif dtype == np.uint64:
