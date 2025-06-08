@@ -718,7 +718,8 @@ class Enum(Generable):
     def get_c_typedef_line(cls) -> str:
         """Returns a typedef to define this enum in C."""
 
-        from pyopencl.tools import dtype_to_ctype  # pylint: disable=import-error
+        # pylint: disable-next=import-error
+        from pyopencl.tools import dtype_to_ctype
         return f"typedef {dtype_to_ctype(cls.dtype)} {cls.c_name};"
 
     @classmethod

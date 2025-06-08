@@ -90,14 +90,6 @@
                 }
             },
             {
-                "code": "reportUnknownVariableType",
-                "range": {
-                    "startColumn": 35,
-                    "endColumn": 49,
-                    "lineCount": 1
-                }
-            },
-            {
                 "code": "reportUnnecessaryIsInstance",
                 "range": {
                     "startColumn": 11,
