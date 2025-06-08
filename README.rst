@@ -4,9 +4,9 @@ cgen: An Abstract Syntax Tree for C, in Python
 .. image:: https://gitlab.tiker.net/inducer/cgen/badges/main/pipeline.svg
     :alt: Gitlab Build Status
     :target: https://gitlab.tiker.net/inducer/cgen/commits/main
-.. image:: https://github.com/inducer/cgen/workflows/CI/badge.svg?branch=main&event=push
+.. image:: https://github.com/inducer/cgen/actions/workflows/ci.yml/badge.svg
     :alt: Github Build Status
-    :target: https://github.com/inducer/cgen/actions?query=branch%3Amain+workflow%3ACI+event%3Apush
+    :target: https://github.com/inducer/cgen/actions/workflows/ci.yml
 .. image:: https://badge.fury.io/py/cgen.svg
     :alt: Python Package Index Release Page
     :target: https://pypi.org/project/cgen/
