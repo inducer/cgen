@@ -14,16 +14,16 @@ cgen: An Abstract Syntax Tree for C, in Python
 cgen offers a simple abstract syntax tree for C and related languages
 (C++/CUDA/OpenCL) to allow structured code generation from Python.
 To represent mathematical expressions, cgen can be used with `pymbolic
-<https://github.com/inducer/pymbolic>`_.
+<https://github.com/inducer/pymbolic>`__.
 
 Places on the web related to cgen:
 
-* `Python package index <http://pypi.python.org/pypi/cgen>`_ (download releases)
-* `Documentation <http://documen.tician.de/cgen>`_ (read how things work)
-* `Github <http://github.com/inducer/cgen>`_ (get latest source code, file bugs)
+* `Python package index <https://pypi.org/project/cgen>`__ (download releases)
+* `Documentation <https://documen.tician.de/cgen>`__ (read how things work)
+* `Github <https://github.com/inducer/cgen>`__ (get latest source code, file bugs)
 
 cgen is licensed under the liberal `MIT license
-<http://en.wikipedia.org/wiki/MIT_License>`_ and free for commercial, academic,
+<https://en.wikipedia.org/wiki/MIT_License>`__ and free for commercial, academic,
 and private use. All of cgen's dependencies can be automatically installed from
 the package index after using::
 
