@@ -39,7 +39,7 @@ def test_cgen() -> None:
         POD(np.uint32, "i"),
         For(Line("i = 0"), Line("i < 17"), Line("++i"),
             If(
-                "a > b",
+                Line("a > b"),
                 Assign("a", "b"),
                 Block([
                     Assign("a", "b-1"),

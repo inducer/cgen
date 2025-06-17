@@ -26,7 +26,7 @@ THE SOFTWARE.
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias
 
 import numpy as np
 from typing_extensions import override
@@ -765,14 +765,14 @@ class Template(NestedDeclarator):
 
 class If(Generable):
     def __init__(self,
-                 condition: str,
+                 condition: Generable,
                  then_: Generable,
                  else_: Generable | None = None) -> None:
         assert isinstance(then_, Generable)
         if else_ is not None:
             assert isinstance(else_, Generable)
 
-        self.condition: str = condition
+        self.condition: Generable = condition
         self.then_: Generable = then_
         self.else_: Generable | None = else_
 
@@ -858,10 +858,10 @@ class CustomLoop(Loop):
 
 
 class While(Loop):
-    def __init__(self, condition: str, body: Generable) -> None:
+    def __init__(self, condition: Generable, body: Generable) -> None:
         super().__init__(body)
 
-        self.condition: str = condition
+        self.condition: Generable = condition
 
     @override
     def intro_line(self) -> str | None:
@@ -889,9 +889,9 @@ class For(Loop):
 
 
 class DoWhile(Loop):
-    def __init__(self, condition: str, body: Generable) -> None:
+    def __init__(self, condition: Generable, body: Generable) -> None:
         super().__init__(body)
-        self.condition: str = condition
+        self.condition: Generable = condition
 
     @override
     def intro_line(self) -> str | None:
@@ -904,15 +904,18 @@ class DoWhile(Loop):
     mapper_method: ClassVar[str] = "map_do_while"
 
 
-def make_multiple_ifs(conditions_and_blocks: Sequence[tuple[str, Generable]],
-                      base: str | Generable | None = None) -> Generable | None:
+def make_multiple_ifs(
+            conditions_and_blocks: Sequence[tuple[Generable | str, Generable]],
+            base: str | Literal["last"] | Generable | None = None
+        ) -> Generable | None:
     if base == "last":
         _, base = conditions_and_blocks[-1]
         conditions_and_blocks = conditions_and_blocks[:-1]
 
     assert not isinstance(base, str)
     for cond, block in conditions_and_blocks[::-1]:
-        base = If(cond, block, base)
+        base = If(Line(cond) if isinstance(cond, str) else cond,
+                  block, base)
 
     return base
 

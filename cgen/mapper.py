@@ -195,7 +195,9 @@ class IdentityMapper(ASTMapper[P, cgen.Generable]):
             self, node: cgen.If, *args: P.args, **kwargs: P.kwargs
         ) -> cgen.If:
         return type(node)(
-                self.map_expression(node.condition, *args, **kwargs),
+                self.rec(node.condition, *args, **kwargs)
+                if isinstance(node.condition, cgen.Generable)  # pyright: ignore[reportUnnecessaryIsInstance]
+                else self.map_expression(node.condition, *args, **kwargs),
                 self.rec(node.then_, *args, **kwargs),
                 self.rec(node.else_, *args, **kwargs)
                 if node.else_ is not None
@@ -205,23 +207,33 @@ class IdentityMapper(ASTMapper[P, cgen.Generable]):
             self, node: cgen.While, *args: P.args, **kwargs: P.kwargs
         ) -> cgen.While:
         return type(node)(
-                self.map_expression(node.condition, *args, **kwargs),
+                self.rec(node.condition, *args, **kwargs)
+                if isinstance(node.condition, cgen.Generable)  # pyright: ignore[reportUnnecessaryIsInstance]
+                else self.map_expression(node.condition, *args, **kwargs),
                 self.rec(node.body, *args, **kwargs))
 
     def map_for(
             self, node: cgen.For, *args: P.args, **kwargs: P.kwargs
         ) -> cgen.For:
         return type(node)(
-                self.rec(node.start, *args, **kwargs),
-                self.map_expression(node.condition, *args, **kwargs),
-                self.map_expression(node.update, *args, **kwargs),
+                self.rec(node.start, *args, **kwargs)
+                if isinstance(node.condition, cgen.Generable)  # pyright: ignore[reportUnnecessaryIsInstance]
+                else self.map_expression(node.start, *args, **kwargs),
+                self.rec(node.condition, *args, **kwargs)
+                if isinstance(node.condition, cgen.Generable)  # pyright: ignore[reportUnnecessaryIsInstance]
+                else self.map_expression(node.condition, *args, **kwargs),
+                self.rec(node.update, *args, **kwargs)
+                if isinstance(node.update, cgen.Generable)  # pyright: ignore[reportUnnecessaryIsInstance]
+                else self.map_expression(node.update, *args, **kwargs),
                 self.rec(node.body, *args, **kwargs))
 
     def map_do_while(
             self, node: cgen.DoWhile, *args: P.args, **kwargs: P.kwargs
         ) -> cgen.DoWhile:
         return type(node)(
-                self.map_expression(node.condition, *args, **kwargs),
+                self.rec(node.condition, *args, **kwargs)
+                if isinstance(node.condition, cgen.Generable)  # pyright: ignore[reportUnnecessaryIsInstance]
+                else self.map_expression(node.condition, *args, **kwargs),
                 self.rec(node.body, *args, **kwargs))
 
     def map_define(
