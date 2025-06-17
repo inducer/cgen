@@ -872,12 +872,14 @@ class While(Loop):
 
 class For(Loop):
     def __init__(self,
-                 start: str, condition: str, update: str,
+                 start: Generable,
+                 condition: Generable,
+                 update: Generable,
                  body: Generable) -> None:
         super().__init__(body)
-        self.start: str = start
-        self.condition: str = condition
-        self.update: str = update
+        self.start: Generable = start
+        self.condition: Generable = condition
+        self.update: Generable = update
 
     @override
     def intro_line(self) -> str | None:
