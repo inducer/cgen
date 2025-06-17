@@ -10,6 +10,7 @@ from cgen import (
     FunctionBody,
     FunctionDeclaration,
     If,
+    Line,
     Struct,
     Template,
     Value,
@@ -36,7 +37,7 @@ def test_cgen() -> None:
         ])
     f_body = FunctionBody(f_decl, Block([
         POD(np.uint32, "i"),
-        For("i = 0", "i < 17", "++i",
+        For(Line("i = 0"), Line("i < 17"), Line("++i"),
             If(
                 "a > b",
                 Assign("a", "b"),
