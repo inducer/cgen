@@ -40,6 +40,15 @@ test = [
 Documentation = "https://documen.tician.de/cgen"
 Homepage = "https://github.com/inducer/cgen"
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.git*",
+  "/doc/_build",
+  "/.editorconfig",
+  "/run-*.sh",
+  "/.basedpyright",
+]
+
 [tool.ruff]
 preview = true
 
