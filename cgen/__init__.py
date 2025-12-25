@@ -52,7 +52,7 @@ def is_long_64_bit() -> bool:
     return bool(_struct.calcsize("l") == 8)
 
 
-def dtype_to_ctype(dtype: DTypeLike) -> str:
+def dtype_to_ctype(dtype: DTypeLike | None) -> str:
     if dtype is None:
         raise ValueError("dtype may not be None")
 
