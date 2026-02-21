@@ -606,8 +606,6 @@ class GenerableStruct(Struct):
         if self.pad_bytes:
             format = f"{format}{self.pad_bytes}x"
             nbytes = padded_bytes
-        else:
-            format = format
 
         self.align_bytes: int = align_bytes
         self.aligned_prime_to: tuple[int, ...] = aligned_prime_to
@@ -1207,8 +1205,7 @@ def block_if_necessary(contents: Sequence[Generable]) -> Generable:
 class LiteralLines(Generable):
     def __init__(self, text: str) -> None:
         # accommodate pyopencl syntax highlighting
-        if text.startswith("//CL//"):
-            text = text[6:]
+        text = text.removeprefix("//CL//")
 
         if not text.startswith("\n"):
             raise ValueError("Expected newline as first character in literal lines")
