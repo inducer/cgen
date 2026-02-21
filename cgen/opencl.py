@@ -68,7 +68,7 @@ class CLKernel(DeclSpecifier):
 
 # {{{ kernel args
 
-Mode: TypeAlias = Literal["r"] | Literal["w"]
+Mode: TypeAlias = Literal["r", "w"]
 
 
 class CLConstant(DeclSpecifier):
@@ -131,8 +131,6 @@ class CLVecTypeHint(NestedDeclarator):
         self.dtype: np.dtype[Any] = np.dtype(dtype)
         if type_str is None:
             type_str = f"{dtype_to_cltype(self.dtype)}{count}"
-        else:
-            type_str = type_str
 
         super().__init__(subdecl)
         self.count: int | None = count

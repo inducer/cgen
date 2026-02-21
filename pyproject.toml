@@ -79,6 +79,9 @@ extend-ignore = [
     "RUF067", # no code in __init__ *shrug*
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"doc/conf.py" = ["S102"]
+
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
 inline-quotes = "double"
