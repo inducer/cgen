@@ -69,18 +69,18 @@ extend-select = [
     "W",   # pycodestyle
 ]
 extend-ignore = [
-    "C90",   # McCabe complexity
-    "E226",  # missing whitespace around arithmetic operator
-    "E241",  # multiple spaces after comma
-    "E242",  # tab after comma
-    "E402",  # module level import not at the top of file
-    "UP031", # use f-strings instead of %
-    "UP032", # use f-strings instead of .format
-    "RUF067", # no code in __init__ *shrug*
+    "complex-structure",
+    "f-string",
+    "missing-whitespace-around-arithmetic-operator",
+    "module-import-not-at-top-of-file",
+    "multiple-spaces-after-comma",
+    "non-empty-init-module",
+    "printf-string-formatting",
+    "tab-after-comma",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"doc/conf.py" = ["S102"]
+"doc/conf.py" = ["exec-builtin"]
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
