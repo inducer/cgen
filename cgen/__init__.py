@@ -1118,7 +1118,7 @@ class InlineInitializer(Initializer):
                 yield v
 
 
-def Constant(vdecl: Declarator, data: str) -> Initializer:  # noqa: N802
+def Constant(vdecl: Declarator, data: str) -> Initializer:  # ruff:ignore[invalid-function-name]
     return Initializer(Const(vdecl), data)
 
 
