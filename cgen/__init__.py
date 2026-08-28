@@ -593,10 +593,7 @@ class GenerableStruct(Struct):
 
         def satisfies_primality(n: int) -> bool:
             import math
-            for p in aligned_prime_to:
-                if math.gcd(n, p) != 1:
-                    return False
-            return True
+            return all(math.gcd(n, p) == 1 for p in aligned_prime_to)
 
         while not satisfies_primality(padded_bytes // align_bytes):
             padded_bytes += align_bytes
